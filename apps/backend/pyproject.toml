@@ -1,0 +1,23 @@
+[project]
+name = "backend"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.18.4",
+    "fastapi[standard]>=0.136.3",
+    "psycopg2>=2.9.12",
+    "sqlalchemy>=2.0.50",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.16",
+]
+
+[tool.ruff.lint]
+# Select the flake8-tidy-imports (TID) rule plugin
+select = ["TID"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Ban all relative imports (options: "all" or "parents")
+ban-relative-imports = "all"
