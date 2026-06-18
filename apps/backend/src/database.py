@@ -7,8 +7,9 @@ from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
 class DBConnectionManager:
     def __init__(self):
         self._engines = None  # Assume one user for now
+        self._db_name = None
 
-    def connect(self, connection_string: str):
+    def connect(self, connection_string: str, db_name: str):
         if self.is_connected():
             self.disconnect()
 
@@ -29,6 +30,10 @@ class DBConnectionManager:
             raise DBConfigError
 
         self._engines = engine
+        self._db_name = db_name
+
+    def get_db_name(self) -> str | None:
+        return self._db_name
 
     def get_engine(self):
         try:
