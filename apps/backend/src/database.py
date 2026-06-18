@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 
-from src.pipeline.exceptions import ConnectionNotFoundError
+from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
 
 
 class DBConnectionManager:
@@ -17,9 +18,13 @@ class DBConnectionManager:
                 pool_recycle=3600,
             )
 
-            # Test connection
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
+            try:
+                # Test connection
+                with engine.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+            except (OperationalError, Exception) as e:
+                engine.dispose()
+                raise DBConfigError
 
             self._engines = engine
 
