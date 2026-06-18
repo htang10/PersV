@@ -9,24 +9,26 @@ class DBConnectionManager:
         self._engines = None  # Assume one user for now
 
     def connect(self, connection_string: str):
-        if not self.is_connected():
-            engine = create_engine(
-                connection_string,
-                pool_size=1,
-                max_overflow=0,
-                pool_pre_ping=True,
-                pool_recycle=3600,
-            )
+        if self.is_connected():
+            self.disconnect()
 
-            try:
-                # Test connection
-                with engine.connect() as conn:
-                    conn.execute(text("SELECT 1"))
-            except (OperationalError, Exception) as e:
-                engine.dispose()
-                raise DBConfigError
+        engine = create_engine(
+            connection_string,
+            pool_size=1,
+            max_overflow=0,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+        )
 
-            self._engines = engine
+        try:
+            # Test connection
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+        except (OperationalError, Exception) as e:
+            engine.dispose()
+            raise DBConfigError
+
+        self._engines = engine
 
     def get_engine(self):
         try:
