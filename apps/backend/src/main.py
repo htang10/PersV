@@ -2,9 +2,11 @@ from fastapi import HTTPException
 from fastapi import FastAPI
 from sqlalchemy import text
 
-from src.database import SessionDep
+from src.pipeline.dependencies import SessionDep
+from src.pipeline.routers import router as pipeline_router
 
 app = FastAPI()
+app.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
 
 
 @app.get("/health")
