@@ -1,17 +1,43 @@
-from typing import Annotated
+from sqlalchemy import create_engine, text
 
-from fastapi import Depends
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
-
-from src.config import settings
-
-engine = create_engine(str(settings.DATABASE_URL))
+from src.pipeline.exceptions import ConnectionNotFoundError
 
 
-def get_db():
-    with Session(engine) as session:
-        yield session
+class DBConnectionManager:
+    def __init__(self):
+        self._engines = None  # Assume one user for now
+
+    def connect(self, connection_string: str):
+        if not self.is_connected():
+            engine = create_engine(
+                connection_string,
+                pool_size=1,
+                max_overflow=0,
+                pool_pre_ping=True,
+                pool_recycle=3600,
+            )
+
+            # Test connection
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+
+            self._engines = engine
+
+    def get_engine(self):
+        try:
+            return self._engines
+        except KeyError:
+            raise ConnectionNotFoundError
+
+    def disconnect(self):
+        try:
+            self._engines.dispose()
+            self._engines = None
+        except AttributeError:
+            raise ConnectionNotFoundError
+
+    def is_connected(self):
+        return False if not self._engines else True
 
 
-SessionDep = Annotated[Session, Depends(get_db)]
+conn_manager = DBConnectionManager()
