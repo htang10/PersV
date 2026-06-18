@@ -18,7 +18,7 @@ router = APIRouter()
     response_model=dict[str, str],
 )
 def connect_demo() -> dict[str, str]:
-    conn_manager.connect(connection_string=str(settings.DATABASE_URL))
+    conn_manager.connect(connection_string=str(settings.DATABASE_URL), db_name="demo")
     return {"status": "connected", "database": "demo"}
 
 
@@ -31,7 +31,7 @@ def connect_demo() -> dict[str, str]:
 def connect(config: Annotated[ConnectionConfig, Form()]) -> dict[str, str]:
     url = f"{config.dbms.scheme}://{config.username}:{config.password}@{config.host}:{config.port}/{config.db}"
     try:
-        conn_manager.connect(connection_string=url)
+        conn_manager.connect(connection_string=url, db_name=config.db)
     except DBConfigError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -44,15 +44,20 @@ def connect(config: Annotated[ConnectionConfig, Form()]) -> dict[str, str]:
     "/is-connected",
     summary="View connection status",
     description="Identify whether an active database connection is currently established.",
+    response_model=dict[str, str | bool | None],
 )
-def is_connected() -> bool:
-    return conn_manager.is_connected()
+def is_connected() -> dict[str, str | bool]:
+    return {
+        "connected": conn_manager.is_connected(),
+        "database": conn_manager.get_db_name(),
+    }
 
 
 @router.post(
     "/disconnect",
     summary="Disconnect from the database",
     description="Terminate the active database connection associated with the provided token.",
+    response_model=str
 )
 def disconnect() -> str:
     try:
