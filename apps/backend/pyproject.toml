@@ -19,10 +19,23 @@ dev = [
     "ruff>=0.15.16",
 ]
 
-[tool.ruff.lint]
-# Select the flake8-tidy-imports (TID) rule plugin
-select = ["TID"]
+[tool.fastapi]
+entrypoint="src.main:app"
 
-[tool.ruff.lint.flake8-tidy-imports]
-# Ban all relative imports (options: "all" or "parents")
-ban-relative-imports = "all"
+[tool.ruff.lint]
+select = [
+    "FAST",
+    "ANN",
+    "ICN",
+    "LOG",
+    "PT",
+    "RSE",
+    "RET",
+    "SIM",
+    "ARG",
+    "I",
+    "TID"
+]
+
+[tool.ruff.format]
+quote-style="double"
