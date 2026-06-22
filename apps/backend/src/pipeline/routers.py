@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Form, HTTPException, status
 from fastapi.routing import APIRouter
 
-from src.config import settings
+from src.core.config import settings
 from src.database import conn_manager
 from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
 from src.pipeline.schemas import ConnectionConfig
@@ -57,7 +57,7 @@ def is_connected() -> dict[str, str | bool]:
     "/disconnect",
     summary="Disconnect from the database",
     description="Terminate the active database connection associated with the provided token.",
-    response_model=str
+    response_model=str,
 )
 def disconnect() -> str:
     try:

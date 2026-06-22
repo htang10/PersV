@@ -1,18 +1,19 @@
-from typing import Annotated
+from typing import Annotated, Any, Generator
 
-from fastapi import HTTPException, Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from src.database import conn_manager
 from src.pipeline.exceptions import ConnectionNotFoundError
 
 
-def get_db():
+def get_db() -> Generator[Session, Any, None]:
     try:
         engine = conn_manager.get_engine()
     except ConnectionNotFoundError:
         raise HTTPException(
-            status_code=401, detail="Invalid connection. Please reconnect."
+            status_code=401,
+            detail="Invalid connection. Please reconnect.",
         )
 
     with Session(engine) as session:
