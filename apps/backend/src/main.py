@@ -1,20 +1,22 @@
-from fastapi import HTTPException
-from fastapi import FastAPI
-from sqlalchemy import text
+from fastapi import FastAPI, HTTPException
 
-from src.pipeline.dependencies import SessionDep
+from src.core.logging import setup_logging
+from src.database import conn_manager
 from src.pipeline.routers import router as pipeline_router
 
+setup_logging()
 app = FastAPI()
 app.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
 
 
-@app.get("/health")
-def health_check(db: SessionDep):
-    """Check the health of the application and its dependencies."""
-
+@app.get(
+    "/health",
+    summary="Health check",
+    description="Check the health of the application and its dependencies.",
+)
+def health_check() -> dict[str, str]:
     try:
-        db.execute(text("SELECT 1"))
+        conn_manager.check_connection()
         return {"status": "OK"}
     except Exception:
-        raise HTTPException(status_code=503, detail="Database connection failed")
+        raise HTTPException(status_code=503, detail="Database unreachable.")
