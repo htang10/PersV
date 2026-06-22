@@ -63,7 +63,7 @@ class DBConnectionManager:
             raise ConnectionNotFoundError
 
     def is_connected(self) -> bool:
-        return self._engines
+        return bool(self._engines)
 
 
 conn_manager = DBConnectionManager()
