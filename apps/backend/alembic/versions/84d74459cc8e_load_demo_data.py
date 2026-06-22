@@ -7,11 +7,12 @@ Create Date: 2026-06-12 08:12:54.057277
 """
 
 from pathlib import Path
-from typing import Sequence, Union, Any
+from typing import Any, Sequence, Union
+
+import polars as pl
+import sqlalchemy as sa
 
 from alembic import op
-import sqlalchemy as sa
-import polars as pl
 
 # revision identifiers, used by Alembic.
 revision: str = "84d74459cc8e"
