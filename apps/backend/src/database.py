@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -11,9 +11,31 @@ logger = logging.getLogger(__name__)
 
 
 class DBConnectionManager:
-    def __init__(self) -> None:
-        self._engines = None  # Assume one user for now
+    def __init__(self) -> None:  # Assume one user for now
+        self._dialect = None
         self._db_name = None
+        self._engine = None
+
+    def get_dialect(self) -> str:
+        return self._engine.dialect.name
+
+    def get_db_name(self) -> str | None:
+        return self._db_name
+
+    def get_engine(self) -> Engine:
+        try:
+            return self._engine
+        except KeyError:
+            logger.error("Failed due to 'self._engine' being None")
+            raise ConnectionNotFoundError
+
+    def get_tables(self) -> list[str]:
+        if not self._engine:
+            return []
+        inspector = inspect(self._engine)
+        if self._engine.dialect.name == "postgresql":
+            return inspector.get_table_names(schema="public")
+        return inspector.get_table_names()
 
     def check_connection(self) -> None:
         engine = create_engine(str(settings.DATABASE_URL))
@@ -41,29 +63,19 @@ class DBConnectionManager:
             logger.error(e)
             raise DBConfigError
 
-        self._engines = engine
+        self._engine = engine
         self._db_name = db_name
-
-    def get_db_name(self) -> str | None:
-        return self._db_name
-
-    def get_engine(self) -> Engine:
-        try:
-            return self._engines
-        except KeyError as e:
-            logger.error("Failed due to 'self._engine' being None")
-            raise ConnectionNotFoundError
 
     def disconnect(self) -> None:
         try:
-            self._engines.dispose()
-            self._engines = None
-        except AttributeError as e:
+            self._engine.dispose()
+            self._engine = None
+        except AttributeError:
             logger.error("Failed due to 'self._engine' being None")
             raise ConnectionNotFoundError
 
     def is_connected(self) -> bool:
-        return bool(self._engines)
+        return bool(self._engine)
 
 
 conn_manager = DBConnectionManager()
