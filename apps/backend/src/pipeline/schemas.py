@@ -34,3 +34,12 @@ class ConnectionConfig(BaseModel):
     host: str = Field(description="The host address of the database server.")
     port: int = Field(description="The port the database server is listening on.")
     db: str = Field(description="The name of the target database.")
+
+
+class QueryResponse(BaseModel):
+    """The query response details."""
+
+    result: str = Field(description="The result of the query.")
+    sql: str = Field(
+        description="The SQL query that was generated and executed to get the result."
+    )
