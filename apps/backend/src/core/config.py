@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     )
 
     DATABASE_URL: PostgresDsn
+    OPENAI_API_KEY: str
     DEBUG: bool
 
 
