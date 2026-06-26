@@ -4,3 +4,7 @@ class ConnectionNotFoundError(Exception):
 
 class DBConfigError(Exception):
     pass
+
+
+class AgentError(Exception):
+    pass
