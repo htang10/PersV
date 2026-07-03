@@ -6,13 +6,13 @@ from langchain.tools import tool
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from src.core.config import settings
-from src.database import conn_manager
+from src.pipeline.config import pl_settings
+from src.pipeline.database import conn_manager
 from src.pipeline.schemas import QueryResponse
 
 model = init_chat_model(
     "openai:gpt-5.5",
-    api_key=settings.OPENAI_API_KEY,
+    api_key=pl_settings.OPENAI_API_KEY,
     temperature=0,
     max_tokens=400,
     timeout=30,

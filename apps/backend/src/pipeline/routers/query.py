@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from src.database import conn_manager
+from src.pipeline.database import conn_manager
 from src.pipeline.exceptions import AgentError
 from src.pipeline.schemas import QueryResponse
 from src.pipeline.service import generate_response
