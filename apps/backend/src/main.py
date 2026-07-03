@@ -1,12 +1,14 @@
 from fastapi import FastAPI, HTTPException
 
-from src.core.logging import setup_logging
-from src.database import conn_manager
+from src.auth.routers import router as auth_router
+from src.log import setup_logging
+from src.pipeline.database import conn_manager
 from src.pipeline.routers import connection, query
 
 setup_logging()
 
 app = FastAPI()
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(connection.router, prefix="/pipeline", tags=["pipeline"])
 app.include_router(query.router, prefix="/pipeline", tags=["pipeline"])
 
