@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+</head>
+<body style="
+margin: 0;
+padding: 0;
+font-family: Arial, Helvetica, sans-serif;
+font-size: 16px;
+">
+    <table align="center" width="500px">
+        <tr>
+            <td>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <p>Hi,</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>Please enter this one-time code below to confirm and proceed with your request.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span style="font-weight: 800; font-size: 30px">{{ code }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p><b>This code is valid for {{ expiry }} minutes.</b></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>If you didn't perform this action, you can safely disregard this email.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
