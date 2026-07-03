@@ -3,7 +3,7 @@ from typing import Annotated, Any, Generator
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from src.database import conn_manager
+from src.pipeline.database import conn_manager
 from src.pipeline.exceptions import ConnectionNotFoundError
 
 

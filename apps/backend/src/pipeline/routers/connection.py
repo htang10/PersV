@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import Form, HTTPException, status
 from fastapi.routing import APIRouter
 
-from src.core.config import settings
-from src.database import conn_manager
+from src.config import settings
+from src.pipeline.database import conn_manager
 from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
 from src.pipeline.schemas import ConnectionConfig
 
@@ -46,7 +46,7 @@ def connect(config: Annotated[ConnectionConfig, Form()]) -> dict[str, str]:
     description="Identify whether an active database connection is currently established.",
     response_model=dict[str, str | bool | None],
 )
-def is_connected() -> dict[str, str | bool]:
+def is_connected() -> dict[str, str | bool | None]:
     return {
         "connected": conn_manager.is_connected(),
         "database": conn_manager.get_db_name(),
