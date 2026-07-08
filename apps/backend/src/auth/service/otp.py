@@ -4,9 +4,7 @@ from datetime import timedelta
 
 from src.auth.exceptions import InvalidCode
 from src.auth.utils import hash_secret
-from src.redis import redis_instance
-
-r = redis_instance()
+from src.redis import redis_client
 
 
 def generate_code(length: int = 6) -> tuple[str, str]:
@@ -18,7 +16,7 @@ def generate_code(length: int = 6) -> tuple[str, str]:
 
 def save_code(hashed_code: str, email: str, minutes: int) -> None:
     """Stores the hashed OTP in Redis keyed by email with the given expiry."""
-    r.setex(f"otp:{email}", timedelta(minutes=minutes), hashed_code)
+    redis_client.setex(f"otp:{email}", timedelta(minutes=minutes), hashed_code)
 
 
 def verify_code(email: str, code: str) -> None:
@@ -28,11 +26,11 @@ def verify_code(email: str, code: str) -> None:
         InvalidCode: The OTP is missing or incorrect.
     """
     hashed_input = hash_secret(code)
-    stored = r.get(f"otp:{email}")
+    stored = redis_client.get(f"otp:{email}")
 
     if stored is None or not hmac.compare_digest(hashed_input, stored):
         raise InvalidCode
 
 
 def delete_code(email: str) -> None:
-    r.delete(f"otp:{email}")
+    redis_client.delete(f"otp:{email}")
