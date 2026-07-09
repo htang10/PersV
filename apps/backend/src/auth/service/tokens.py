@@ -1,52 +1,72 @@
+import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Union
 
-from jose import jwt
+from fastapi.security import HTTPAuthorizationCredentials
+from jose import JWTError, jwt
 
 from src.auth.config import auth_settings
+from src.auth.exceptions import InvalidToken
+from src.redis import redis_client
 
 
-def create_access_token(
-    subject: Union[str, Any], expires_delta: int | None = None
-) -> str:
-    if expires_delta is not None:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=expires_delta)
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=auth_settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-
+def create_access_token(user_id: str) -> str:
+    now = datetime.now(timezone.utc)
     payload = {
-        "sub": subject,
-        "type": "access",
-        "exp": expire,
+        "iss": auth_settings.JWT_ISSUER,
+        "sub": user_id,
+        "aud": auth_settings.JWT_AUDIENCE,
+        "exp": now + timedelta(minutes=auth_settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
+        "nbf": now,
+        "iat": now,
+        "jti": str(uuid.uuid4()),
     }
     return jwt.encode(
         payload, auth_settings.JWT_SECRET_KEY, auth_settings.JWT_ALGORITHM
     )
 
 
-def create_refresh_token(
-    subject: Union[str, Any], expires_delta: int | None = None
-) -> str:
-    if expires_delta is not None:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=expires_delta)
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=auth_settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES
+def create_refresh_token(user_id: str) -> str:
+    token = secrets.token_urlsafe(64)
+    redis_client.setex(
+        f"refresh_token:{token}",
+        timedelta(minutes=auth_settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES),
+        user_id,
+    )
+    return token
+
+
+def validate_access(credentials: HTTPAuthorizationCredentials) -> dict:
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(
+            token,
+            auth_settings.JWT_SECRET_KEY,
+            algorithms=[auth_settings.JWT_ALGORITHM],
+            audience=auth_settings.JWT_AUDIENCE,
+            issuer=auth_settings.JWT_ISSUER,
         )
+    except JWTError:
+        raise InvalidToken
 
-    payload = {
-        "sub": subject,
-        "type": "refresh",
-        "exp": expire,
-    }
-    return jwt.encode(
-        payload, auth_settings.JWT_SECRET_KEY, auth_settings.JWT_ALGORITHM
-    )
+    return payload
 
 
-def decode_token(token: str) -> dict:
-    return jwt.decode(
-        token, auth_settings.JWT_SECRET_KEY, algorithms=[auth_settings.JWT_ALGORITHM]
-    )
+def revoke_refresh_token(token: str) -> None:
+    redis_client.delete(f"refresh_token:{token}")
+
+
+def rotate_refresh_token(old_token: str) -> tuple[str, str]:
+    user_id = redis_client.get(f"refresh_token:{old_token}")
+
+    if not user_id:
+        raise InvalidToken
+
+    # invalidate old token immediately
+    revoke_refresh_token(old_token)
+
+    # issue new pair
+    new_access = create_access_token(user_id)
+    new_refresh = create_refresh_token(user_id)
+
+    return new_access, new_refresh
