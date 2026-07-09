@@ -12,6 +12,14 @@ from src.auth.utils import display_name_from_email
 logger = logging.getLogger(__name__)
 
 
+def get_user_by_id(user_id: str, session: Session) -> User:
+    try:
+        return session.execute(select(User).filter_by(id=user_id)).scalar_one()
+    except NoResultFound as e:
+        logger.error(e)
+        raise UserNotFound
+
+
 def get_user_by_email(email: str, session: Session) -> User:
     try:
         return session.execute(select(User).filter_by(email=email)).scalar_one()
