@@ -5,11 +5,6 @@ from hashlib import sha512
 import html2text
 
 
-def normalize_email(email: str) -> str:
-    """Converts all letters in email address to lowercase."""
-    return email.strip().lower()
-
-
 def hash_secret(value: str) -> str:
     """Hashes a value using SHA-512 and returns the hex digest."""
     return sha512(value.encode("utf-8")).hexdigest()
