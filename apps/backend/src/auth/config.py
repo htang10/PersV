@@ -17,6 +17,8 @@ class AuthSettings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+    JWT_ISSUER: str
+    JWT_AUDIENCE: str
 
 
 auth_settings = AuthSettings()
