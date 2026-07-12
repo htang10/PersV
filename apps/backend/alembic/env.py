@@ -1,16 +1,18 @@
+# ruff: noqa: F401
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
-import src.alembic_models
+import src.auth.models
+import src.pipeline.models
 from alembic import context
-from src.config import settings
-from src.models import Base
+from src.core.config import settings
+from src.core.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
+config.set_main_option("sqlalchemy.url", str(settings.MIGR_DB_URL))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
