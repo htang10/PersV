@@ -33,7 +33,10 @@ class DBConnectionManager:
         inspector = inspect(self._engine)
         if self._engine.dialect.name == "postgresql":
             return inspector.get_table_names(schema="public")
-        return inspector.get_table_names()
+        full_list = inspector.get_table_names()
+        return [
+            demo_tables for demo_tables in full_list if demo_tables.startswith("demo_")
+        ]
 
     def connect(self, connection_string: str, db_name: str) -> None:
         if self.is_connected():
