@@ -1,5 +1,5 @@
 from src.auth.service.mailing import send_login_otp
-from src.celery import app
+from src.core.celery import app
 
 
 @app.task
