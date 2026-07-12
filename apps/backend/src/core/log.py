@@ -2,7 +2,7 @@ import logging
 from logging import StreamHandler
 
 
-def setup_logging() -> None:
+def setup_logging(level: str) -> None:
     handler = StreamHandler()
     handler.setFormatter(
         logging.Formatter(
@@ -10,7 +10,7 @@ def setup_logging() -> None:
         )
     )
 
-    logging.basicConfig(handlers=[handler])
+    logging.basicConfig(level=level, handlers=[handler])
 
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         uvicorn_logger = logging.getLogger(name)
