@@ -7,7 +7,7 @@ from src.auth.config import auth_settings
 from src.auth.dependencies import AuthSessionDep
 from src.auth.exceptions import InvalidCode, UserNotFound
 from src.auth.repository import create_user, get_user_by_email, update_login_metadata
-from src.auth.schemas import LoginRequest, MessageResponse, OTPRequest, TokenResponse
+from src.auth.schemas import LoginRequest, OTPRequest, TokenResponse
 from src.auth.service.otp import delete_code, verify_code
 from src.auth.service.tokens import (
     create_access_token,
@@ -16,6 +16,7 @@ from src.auth.service.tokens import (
     rotate_refresh_token,
 )
 from src.auth.tasks import send_login_otp_task
+from src.core.schemas import MessageResponse
 
 router = APIRouter()
 
