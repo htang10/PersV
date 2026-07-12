@@ -36,9 +36,22 @@ class ConnectionConfig(BaseModel):
     db: str = Field(description="The name of the target database.")
 
 
-class QueryResponse(BaseModel):
-    """The query response details."""
+class SuccessConnection(BaseModel):
+    status: str = Field(default="connected")
+    database: str = Field(
+        default="demo", description="Database name is set as 'demo' if not specified."
+    )
 
+
+class ConnectionCheck(BaseModel):
+    connected: bool
+    database: str | None = Field(
+        default=None,
+        description="Name of the connected database, or 'null' if not connected.",
+    )
+
+
+class QueryResponse(BaseModel):
     result: str = Field(description="The result of the query.")
     sql: str = Field(
         description="The SQL query that was generated and executed to get the result."
