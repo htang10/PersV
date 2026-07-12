@@ -2,11 +2,11 @@ from datetime import date
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.models import Base
+from src.core.models import Base
 
 
 class WalmartSales(Base):
-    __tablename__ = "walmart_sales"
+    __tablename__ = "demo_walmart_sales"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     store_id: Mapped[int]
