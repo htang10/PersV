@@ -17,6 +17,15 @@ def generate_response(question: str) -> Any:
             version="v3",
         )
 
+        for kind, item in stream.interleave("messages", "tool_calls"):
+            if kind == "messages":
+                logger.debug(f"Agent message: {item.text}")
+            elif kind == "tool_calls":
+                logger.debug(f"\nTool call: {item.tool_name}({item.input})")
+                for delta in item.output_deltas:
+                    logger.debug(delta)
+                logger.debug(f"\nTool result: {item.output}")
+
         return ast.literal_eval(stream.output["messages"][-1].content[0]["text"])
     except Exception as e:
         logger.error(f"Agent failed to generate response: {e}.")
