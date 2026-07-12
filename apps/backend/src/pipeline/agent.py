@@ -21,14 +21,18 @@ model = init_chat_model(
 
 @tool
 def sql_list_tables() -> list[str]:
-    """Return a comma-separated list of table names (e.g. "users, orders, products")."""
+    """Input to this tool is an empty string, output is a comma-separated list of tables in the database.
 
-    return conn_manager.get_tables()
+    Always use this tool at start. MUST NOT skip!
+    """
+
+    return ["demo_walmart_sales"]
+    # return conn_manager.get_tables()
 
 
 @tool
 def sql_check_query(query: str) -> str:
-    """Double check if your query is correct before executing it.
+    """Use this to double check if your query is correct before executing it.
 
     Always use this tool before executing a query with `sql_run_query`.
     """
@@ -104,22 +108,29 @@ You are an agent designed to interact with a SQL database.
 Given an input question, create a syntactically correct {dialect} query to run,
 then look at the results of the query and return the answer. Unless the user
 specifies a specific number of examples they wish to obtain, always limit your
-query to at most {top_k} results.
+query to at most {top_k} results. Use the tool `sql_run_query` to execute your query.
 
 You can order the results by a relevant column to return the most interesting
 examples in the database. Never query for all the columns from a specific table,
 only ask for the relevant columns given the question.
 
-You MUST double check your query before executing it. If you get an error while
-executing a query, rewrite the query and try again.
+You MUST double check your query before executing it using the tool `sql_check_query`.
+If you get an error while executing a query, rewrite the query and try again.
 
 DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the
 database.
 
 To start you should ALWAYS look at the tables in the database to see what you
-can query. Do NOT skip this step.
+can query using the tool `sql_list_tables`. Do NOT skip this step.
 
 Then you should query the schema of the most relevant tables.
+
+IMPORTANT NOTES:
+- You MUST use the tools provided, not performing your own action.
+- If you are asked questions unrelated to the available tables, require data
+you do not have access to, or require actions outside your permitted scope, respond with exactly:
+"I'm unable to answer that question with the available data." and do not return the sql query
+executed since users may get confused.
 """
 
 
