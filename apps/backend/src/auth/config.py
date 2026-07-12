@@ -1,3 +1,4 @@
+from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -7,6 +8,8 @@ class AuthSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+    AUTH_DB_URL: PostgresDsn
+
     SMTP_HOST: str
     SMTP_PORT: int
     SMTP_USERNAME: str
