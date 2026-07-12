@@ -8,7 +8,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-    DATABASE_URL: PostgresDsn
+    MIGR_DB_URL: PostgresDsn
     REDIS_URL: RedisDsn
     DEBUG: bool
 
