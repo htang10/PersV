@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Generator
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.pipeline.database import conn_manager
@@ -12,7 +12,7 @@ def get_db() -> Generator[Session, Any, None]:
         engine = conn_manager.get_engine()
     except ConnectionNotFoundError:
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid connection. Please reconnect.",
         )
 
