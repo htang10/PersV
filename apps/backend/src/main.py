@@ -6,18 +6,18 @@ from fastapi import FastAPI
 from src.auth.dependencies import auth_engine
 from src.auth.exceptions import InvalidToken
 from src.auth.routers import router as auth_router
-from src.handlers import (
+from src.core.config import settings
+from src.core.handlers import (
     token_error_handler,
     unexpected_error_handler,
 )
-from src.log import setup_logging
+from src.core.log import setup_logging
 from src.pipeline.routers import connection, query
-
-setup_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
+    setup_logging("DEBUG" if settings.DEBUG else "INFO")
     yield
     auth_engine.dispose()
 
