@@ -5,13 +5,13 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from src.auth.config import auth_settings
 from src.auth.exceptions import UserNotFound
 from src.auth.models import User
 from src.auth.repository import get_user_by_id
 from src.auth.service.tokens import validate_access
-from src.config import settings
 
-auth_engine = create_engine(str(settings.DATABASE_URL))
+auth_engine = create_engine(str(auth_settings.AUTH_DB_URL))
 security = HTTPBearer()
 
 
