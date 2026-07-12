@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from src.auth.exceptions import InvalidCode
 from src.auth.utils import hash_secret
-from src.redis import redis_client
+from src.core.redis import redis_client
 
 
 def generate_code(length: int = 6) -> tuple[str, str]:

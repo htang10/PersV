@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 
 from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidToken
-from src.redis import redis_client
+from src.core.redis import redis_client
 
 
 def create_access_token(user_id: str) -> str:
