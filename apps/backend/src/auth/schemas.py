@@ -5,10 +5,6 @@ from pydantic import BaseModel, BeforeValidator, Field
 NormalizedEmail = Annotated[str, BeforeValidator(lambda v: v.strip().lower())]
 
 
-class MessageResponse(BaseModel):
-    message: str = Field()
-
-
 class OTPRequest(BaseModel):
     email: NormalizedEmail
 
