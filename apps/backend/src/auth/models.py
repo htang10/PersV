@@ -1,16 +1,19 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, MetaData, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from src.core.models import Base
+
+class AuthBase(DeclarativeBase):
+    metadata = MetaData(schema="auth")
 
 
-class User(Base):
-    __tablename__ = "users"
+class User(AuthBase):
+    __tablename__ = "user"
+    __table_args__ = {"schema": "auth"}
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid7
