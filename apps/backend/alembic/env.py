@@ -3,11 +3,10 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
-import src.auth.models
-import src.pipeline.models
 from alembic import context
+from src.auth.models import AuthBase
 from src.core.config import settings
-from src.core.models import Base
+from src.pipeline.models import DemoBase
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -23,7 +22,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support5
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = Base.metadata
+target_metadata = [AuthBase.metadata, DemoBase.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -49,6 +48,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_schemas=True,
+        version_table_schema="migration",
     )
 
     with context.begin_transaction():
@@ -69,7 +70,12 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_schemas=True,
+            version_table_schema="migration",
+        )
 
         with context.begin_transaction():
             context.run_migrations()
