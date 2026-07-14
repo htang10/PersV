@@ -3,6 +3,7 @@ import logging
 from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.exc import OperationalError
 
+from src.pipeline.config import pl_settings
 from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
 
 logger = logging.getLogger(__name__)
@@ -31,12 +32,7 @@ class DBConnectionManager:
         if not self._engine:
             return []
         inspector = inspect(self._engine)
-        if self._engine.dialect.name == "postgresql":
-            return inspector.get_table_names(schema="public")
-        full_list = inspector.get_table_names()
-        return [
-            demo_tables for demo_tables in full_list if demo_tables.startswith("demo_")
-        ]
+        return inspector.get_table_names()
 
     def connect(self, connection_string: str, db_name: str) -> None:
         if self.is_connected():
