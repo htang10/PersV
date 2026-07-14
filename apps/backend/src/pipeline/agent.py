@@ -26,8 +26,7 @@ def sql_list_tables() -> list[str]:
     Always use this tool at start. MUST NOT skip!
     """
 
-    return ["demo_walmart_sales"]
-    # return conn_manager.get_tables()
+    return conn_manager.get_tables()
 
 
 @tool
