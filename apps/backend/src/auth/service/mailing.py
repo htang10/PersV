@@ -15,7 +15,6 @@ from jinja2 import Environment, PackageLoader, TemplateSyntaxError, select_autoe
 from jinja2.exceptions import TemplateNotFound
 
 from src.auth.config import auth_settings
-from src.auth.exceptions import MailingServiceError
 from src.auth.service.otp import generate_code, save_code
 from src.auth.utils import html_to_text
 
@@ -40,35 +39,33 @@ def _send_email(recipient: str, message: MIMEMultipart) -> None:
 
 @contextmanager
 def handle_mailing_errors() -> Generator[None, Any, None]:
-    """A context manager that catches template errors, SMTP errors and database error.
-
-    Raises:
-        MailingServiceError
-    """
+    """A context manager that catches template errors, SMTP errors and database error."""
     try:
         yield
     except (TemplateNotFound, TemplateSyntaxError) as e:
         logger.error(f"Template error: {e}")
-        raise MailingServiceError
     except SMTPAuthenticationError as e:
         logger.error(f"SMTP authentication error: {e}")
-        raise MailingServiceError
     except SMTPConnectError as e:
         logger.error(f"SMTP connection error: {e}")
-        raise MailingServiceError
     except SMTPRecipientsRefused as e:
         logger.error(f"SMTP recipient refused error: {e}")
-        raise MailingServiceError
     except SMTPException as e:
         logger.error(f"Unexpected SMTP error: {e}")
-        raise MailingServiceError
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
 
 
-def send_login_otp(user_email: str) -> None:
+def send_login_otp(email: str) -> None:
+    """Generates a login OTP code and emails it to the user.
+
+    Args:
+        email: The recipient's email address.
+    """
     with handle_mailing_errors():
         expiry = 10
         raw_code, hashed_code = generate_code()
-        save_code(hashed_code, user_email, expiry)
+        save_code(hashed_code, email, expiry)
 
         html_content, text_content = _render_template(
             "login.html", code=raw_code, expiry=expiry
@@ -76,9 +73,9 @@ def send_login_otp(user_email: str) -> None:
 
         message = MIMEMultipart("alternative")
         message["From"] = auth_settings.FROM_EMAIL
-        message["To"] = user_email
+        message["To"] = email
         message["Subject"] = "Confirmation code to log in your account"
         message.attach(MIMEText(text_content, "plain"))
         message.attach(MIMEText(html_content, "html"))
 
-        _send_email(user_email, message)
+        _send_email(email, message)
