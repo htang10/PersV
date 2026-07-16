@@ -2,13 +2,20 @@ import ast
 import logging
 from typing import Any
 
+from src.auth.dependencies import auth_engine
 from src.pipeline.agent import create_sql_agent
+from src.pipeline.database import conn_manager
 from src.pipeline.exceptions import AgentError
 
 logger = logging.getLogger(__name__)
 
 
 def generate_response(question: str) -> Any:
+    """Generates a response using the SQL agent.
+
+    Raises:
+        AgentError: If the agent fails to process the question or generate a response.
+    """
     agent = create_sql_agent()
 
     try:
@@ -30,3 +37,8 @@ def generate_response(question: str) -> Any:
     except Exception as e:
         logger.error(f"Agent failed to generate response: {e}.")
         raise AgentError
+
+
+def dispose_all_engines() -> None:
+    conn_manager.disconnect()
+    auth_engine.dispose()
