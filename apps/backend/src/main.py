@@ -3,7 +3,6 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI
 
-from src.auth.dependencies import auth_engine
 from src.auth.exceptions import InvalidToken
 from src.auth.routers import router as auth_router
 from src.core.config import settings
@@ -13,13 +12,14 @@ from src.core.handlers import (
 )
 from src.core.log import setup_logging
 from src.pipeline.routers import connection, query
+from src.pipeline.service import dispose_all_engines
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     setup_logging("DEBUG" if settings.DEBUG else "INFO")
     yield
-    auth_engine.dispose()
+    dispose_all_engines()
 
 
 app = FastAPI(lifespan=lifespan)
