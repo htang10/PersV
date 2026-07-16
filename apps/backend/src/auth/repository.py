@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_by_id(user_id: str, session: Session) -> User:
+    """Retrieves a user by ID.
+
+    Raises:
+        UserNotFound: If no user exists with the given ID.
+    """
     try:
         return session.execute(select(User).filter_by(id=user_id)).scalar_one()
     except NoResultFound as e:
@@ -21,6 +26,11 @@ def get_user_by_id(user_id: str, session: Session) -> User:
 
 
 def get_user_by_email(email: str, session: Session) -> User:
+    """Retrieves a user by email address.
+
+    Raises:
+        UserNotFound: If no user exists with the given email address.
+    """
     try:
         return session.execute(select(User).filter_by(email=email)).scalar_one()
     except NoResultFound as e:

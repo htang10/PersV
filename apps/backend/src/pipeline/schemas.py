@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class DBMS(StrEnum):
+    """Supported database management systems and their SQLAlchemy URL schemes."""
+
     POSTGRESQL = "postgresql"
     MYSQL = "mysql"
     MARIADB = "mariadb"
@@ -13,6 +15,7 @@ class DBMS(StrEnum):
 
     @property
     def scheme(self) -> str:
+        """Returns the SQLAlchemy connection scheme for the database driver."""
         return {
             DBMS.POSTGRESQL: "postgresql+psycopg2",
             DBMS.MYSQL: "mysql+mysqldb",
@@ -24,6 +27,8 @@ class DBMS(StrEnum):
 
 
 class ConnectionConfig(BaseModel):
+    """Database connection parameters provided by the user."""
+
     model_config = ConfigDict(extra="forbid")
     dbms: DBMS = Field(
         default=DBMS.POSTGRESQL,
@@ -52,6 +57,8 @@ class ConnectionCheck(BaseModel):
 
 
 class QueryResponse(BaseModel):
+    """Response containing the query result and the generated SQL statement."""
+
     result: str = Field(description="The result of the query.")
     sql: str = Field(
         description="The SQL query that was generated and executed to get the result."
