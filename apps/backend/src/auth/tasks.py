@@ -4,4 +4,9 @@ from src.core.celery import app
 
 @app.task
 def send_login_otp_task(email: str) -> None:
+    """Celery task wrapper for sending a login OTP email asynchronously.
+
+    Args:
+        email: The recipient's email address.
+    """
     send_login_otp(email)

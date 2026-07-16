@@ -37,6 +37,17 @@ def create_refresh_token(user_id: str) -> str:
 
 
 def validate_access(credentials: HTTPAuthorizationCredentials) -> dict:
+    """Validates a JWT access token and returns its decoded claims.
+
+    Args:
+        credentials: Bearer token extracted from the Authorization header.
+
+    Returns:
+        The decoded JWT payload.
+
+    Raises:
+        InvalidToken: If the token is invalid, expired, or fails validation.
+    """
     token = credentials.credentials
     try:
         payload = jwt.decode(
@@ -57,6 +68,14 @@ def revoke_refresh_token(token: str) -> None:
 
 
 def rotate_refresh_token(old_token: str) -> tuple[str, str]:
+    """Rotates a refresh token and issues a new token pair.
+
+    The existing refresh token is revoked before generating a new access
+    token and refresh token.
+
+    Raises:
+        InvalidToken: If the refresh token is invalid or has been revoked.
+    """
     user_id = redis_client.get(f"refresh_token:{old_token}")
 
     if not user_id:

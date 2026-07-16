@@ -7,7 +7,7 @@ from src.auth.config import auth_settings
 from src.auth.dependencies import AuthSessionDep
 from src.auth.exceptions import InvalidCode, UserNotFound
 from src.auth.repository import create_user, get_user_by_email, update_login_metadata
-from src.auth.schemas import LoginRequest, OTPRequest, TokenResponse
+from src.auth.schemas import AuthResponse, OTPLoginRequest, OTPRequest
 from src.auth.service.otp import delete_code, verify_code
 from src.auth.service.tokens import (
     create_access_token,
@@ -25,7 +25,7 @@ router = APIRouter()
     "/generate-otp",
     summary="Request a one-time password",
     description="""Sends a time-limited one-time password to the provided email address.
-    Use the returned code with POST /login to authenticate.""",
+    Use the returned code with `POST /auth/login` to authenticate.""",
     response_model=MessageResponse,
 )
 def generate_otp(body: OTPRequest):
@@ -40,9 +40,9 @@ def generate_otp(body: OTPRequest):
     description="""Verifies the one-time password sent to the provided email.
     Creates a new account if the email is unrecognized. 
     Returns a JWT access token and refresh token on success.""",
-    response_model=TokenResponse,
+    response_model=AuthResponse,
 )
-def login(body: LoginRequest, request: Request, session: AuthSessionDep):
+def login(body: OTPLoginRequest, request: Request, session: AuthSessionDep):
     email = body.email
     code = body.code
     try:
@@ -93,7 +93,7 @@ def logout(refresh_token: str = Cookie(include_in_schema=False)):
     description="""Validates the refresh token stored in the HTTP-only cookie,
     issues a new access token, and rotates the refresh token.
     The rotated refresh token is set as an HTTP-only cookie.""",
-    response_model=TokenResponse,
+    response_model=AuthResponse,
 )
 def refresh_tokens(refresh_token: str = Cookie(include_in_schema=False)):
     new_access_token, new_refresh_token = rotate_refresh_token(refresh_token)
