@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import NoResultFound
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 from src.auth.exceptions import UserNotFound
 from src.auth.models import User
 from src.auth.utils import display_name_from_email
+from src.core.utils import get_current_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,8 @@ def update_login_metadata(user: User, ip_address: str, session: Session) -> None
     session.execute(
         update(User)
         .where(User.email == user.email)
-        .values(last_login_at=datetime.now(timezone.utc), last_login_ip=ip_address)
+        .values(
+            last_login_at=get_current_datetime().isoformat(), last_login_ip=ip_address
+        )
     )
     session.commit()
