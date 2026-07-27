@@ -1,17 +1,18 @@
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 
+from core.utils import get_current_datetime
 from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidToken
 from src.core.redis import redis_client
 
 
 def create_access_token(user_id: str) -> str:
-    now = datetime.now(timezone.utc)
+    now = get_current_datetime()
     payload = {
         "iss": auth_settings.JWT_ISSUER,
         "sub": user_id,
@@ -36,18 +37,21 @@ def create_refresh_token(user_id: str) -> str:
     return token
 
 
-def validate_access(credentials: HTTPAuthorizationCredentials) -> dict:
-    """Validates a JWT access token and returns its decoded claims.
+def validate_access(credentials: HTTPAuthorizationCredentials | None) -> dict:
+    """Validate a JWT access token and return its decoded claims.
 
     Args:
         credentials: Bearer token extracted from the Authorization header.
 
     Returns:
-        The decoded JWT payload.
+        The decoded JWT payload, or an empty dictionary if credentials are missing.
 
     Raises:
         InvalidToken: If the token is invalid, expired, or fails validation.
     """
+    if not credentials:
+        return {}
+
     token = credentials.credentials
     try:
         payload = jwt.decode(
