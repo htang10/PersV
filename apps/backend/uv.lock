@@ -80,10 +80,11 @@ wheels = [
 [[package]]
 name = "backend"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
     { name = "celery" },
+    { name = "cryptography" },
     { name = "deepagents" },
     { name = "fastapi", extra = ["standard"] },
     { name = "html2text" },
@@ -107,6 +108,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.18.4" },
     { name = "celery", specifier = ">=5.6.3" },
+    { name = "cryptography", specifier = ">=49.0.0" },
     { name = "deepagents", specifier = ">=0.6.12" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.136.3" },
     { name = "html2text", specifier = ">=2025.4.15" },
