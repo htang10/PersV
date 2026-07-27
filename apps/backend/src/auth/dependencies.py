@@ -11,17 +11,18 @@ from src.auth.models import User
 from src.auth.repository import get_user_by_id
 from src.auth.service.tokens import validate_access
 
-auth_engine = create_engine(str(auth_settings.AUTH_DB_URL))
-security = HTTPBearer()
+AUTH_ENGINE = create_engine(str(auth_settings.AUTH_DB_URL))
+required_bearer = HTTPBearer()
+optional_bearer = HTTPBearer(auto_error=False)
 
 
 def get_auth_db() -> Generator[Session, Any, None]:
-    with Session(auth_engine) as session:
+    with Session(AUTH_ENGINE) as session:
         yield session
 
 
 def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(required_bearer)],
     session: Session = Depends(get_auth_db),
 ) -> User:
     try:
@@ -41,5 +42,16 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
     return current_user
 
 
+def get_optional_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(optional_bearer)],
+    session: Session = Depends(get_auth_db),
+) -> User | None:
+    payload = validate_access(credentials)
+    if not payload:
+        return None
+    return get_user_by_id(payload["sub"], session)
+
+
 AuthSessionDep = Annotated[Session, Depends(get_auth_db)]
 CurrentUser = Annotated[User, Depends(get_current_active_user)]
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]
