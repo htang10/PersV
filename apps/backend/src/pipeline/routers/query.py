@@ -1,6 +1,7 @@
 # ruff: noqa: ANN201
 from fastapi import APIRouter, HTTPException, status
 
+from pipeline.database import custom_conn_manager
 from src.auth.dependencies import OptionalUser
 from src.pipeline.agent.executor import generate_response
 from src.pipeline.exceptions import AgentError, ConnectionNotFoundError
@@ -20,14 +21,16 @@ def query(
     user: OptionalUser,
 ):
     user_id = str(user.id) if user else None
+    if user_id:
+        success = custom_conn_manager.reset_expiry(user_id=user_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Not connected to any database.",
+            )
 
     try:
         return generate_response(question=prompt, user_id=user_id)
-    except ConnectionNotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Not connected to any database.",
-        )
     except AgentError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
