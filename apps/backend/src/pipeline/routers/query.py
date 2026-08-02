@@ -1,10 +1,10 @@
 # ruff: noqa: ANN201
 from fastapi import APIRouter, HTTPException, status
 
-from src.pipeline.database import conn_manager
-from src.pipeline.exceptions import AgentError
+from src.auth.dependencies import OptionalUser
+from src.pipeline.agent.executor import generate_response
+from src.pipeline.exceptions import AgentError, ConnectionNotFoundError
 from src.pipeline.schemas import QueryResponse
-from src.pipeline.service import generate_response
 
 router = APIRouter()
 
@@ -15,15 +15,19 @@ router = APIRouter()
     description="Ask a question in plain English and get an answer drawn directly from your data.",
     response_model=QueryResponse,
 )
-def query(prompt: str):
-    if not conn_manager.is_connected():
+def query(
+    prompt: str,
+    user: OptionalUser,
+):
+    user_id = str(user.id) if user else None
+
+    try:
+        return generate_response(question=prompt, user_id=user_id)
+    except ConnectionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not connected to any database.",
         )
-
-    try:
-        return generate_response(prompt)
     except AgentError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
