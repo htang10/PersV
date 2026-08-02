@@ -10,6 +10,8 @@ class PipelineSettings(BaseSettings):
     )
     OPENAI_API_KEY: str
     DEMO_DB_URL: PostgresDsn
+    ENCRYPTION_KEY: str
+    CONN_EXP: int
 
 
 pl_settings = PipelineSettings()
