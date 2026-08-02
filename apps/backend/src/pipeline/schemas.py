@@ -32,23 +32,34 @@ class ConnectionConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     dbms: DBMS = Field(
         default=DBMS.POSTGRESQL,
-        description="The target database management system. Defaults to PostgreSQL.",
+        description="The database management system hosting the target database. Defaults to PostgreSQL.",
     )
-    username: str = Field(description="The database username.")
-    password: str = Field(description="The database password.")
-    host: str = Field(description="The host address of the database server.")
-    port: int = Field(description="The port the database server is listening on.")
-    db: str = Field(description="The name of the target database.")
+    username: str = Field(
+        description="The username used to authenticate with the database server."
+    )
+    password: str = Field(
+        description="The password used to authenticate with the database server."
+    )
+    host: str = Field(description="The hostname or IP address of the database server.")
+    port: int = Field(
+        description="The port number the database server is listening on."
+    )
+    db: str = Field(description="The name of the database to connect to.")
+    db_schema: str | None = Field(
+        default=None,
+        alias="schema",
+        description="The schema to set as the search path. Only applicable to database systems that support schemas, such as PostgreSQL. Leave empty for others.",
+    )
 
 
 class SuccessConnection(BaseModel):
     status: str = Field(default="connected")
     database: str = Field(
-        default="demo", description="Database name is set as 'demo' if not specified."
+        description="Database name is set as 'chook' if not specified.",
     )
 
 
-class ConnectionCheck(BaseModel):
+class ConnectionStatus(BaseModel):
     connected: bool
     database: str | None = Field(
         default=None,
