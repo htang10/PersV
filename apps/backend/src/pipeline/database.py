@@ -71,6 +71,10 @@ class CustomDBConnectionManager:
             self.clear_cached_engine(user_id=user_id)
             redis_client.delete(f"connection:{user_id}")
 
+    @staticmethod
+    def reset_expiry(user_id: str) -> bool:
+        return redis_client.expire(f"connection:{user_id}", pl_settings.CONN_EXP)
+
     def get_engine(self, user_id: str | None = None) -> Engine:
         if not user_id:  # GUESTS
             engine = DEMO_ENGINE
