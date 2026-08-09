@@ -5,10 +5,10 @@ from datetime import timedelta
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 
-from core.utils import get_current_datetime
 from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidToken
 from src.core.redis import redis_client
+from src.core.utils import get_current_datetime
 
 
 def create_access_token(user_id: str) -> str:
