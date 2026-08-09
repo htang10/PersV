@@ -1,18 +1,30 @@
 import logging
-from logging import StreamHandler
+
+from rich.logging import RichHandler
 
 
-def setup_logging(level: str) -> None:
-    handler = StreamHandler()
-    handler.setFormatter(
-        logging.Formatter(
-            "%(levelname)s %(asctime)s %(name)s %(funcName)s() %(lineno)s: %(message)s"
-        )
+def setup_logging(level: int) -> None:
+    rich = RichHandler(rich_tracebacks=True)
+
+    logging.basicConfig(
+        level=level,
+        handlers=[rich],
+        format="%(name)s %(funcName)s() %(lineno)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    logging.basicConfig(level=level, handlers=[handler])
+    # Suppress verbose HTTP libraries
+    for logger_name in ("httpcore", "httpx", "hpack", "urllib3", "anthropic"):
+        logging.getLogger(logger_name).setLevel(max(level, logging.WARNING))
 
-    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
-        uvicorn_logger = logging.getLogger(name)
-        uvicorn_logger.handlers = [handler]
-        uvicorn_logger.propagate = False
+    uvicorn_loggers = (
+        ("uvicorn", level),
+        ("uvicorn.error", level),
+        ("uvicorn.access", max(level, logging.INFO)),
+    )
+
+    for logger_name, log_level in uvicorn_loggers:
+        logger = logging.getLogger(logger_name)
+        logger.handlers.clear()
+        logger.propagate = True
+        logger.setLevel(log_level)
