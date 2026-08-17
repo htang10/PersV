@@ -8,10 +8,11 @@ class PipelineSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-    OPENAI_API_KEY: str
+    ANTHROPIC_API_KEY: str
     DEMO_DB_URL: PostgresDsn
+    DEMO_SCHEMA: str
     ENCRYPTION_KEY: str
     CONN_EXP: int
 
 
-pl_settings = PipelineSettings()
+pl_settings = PipelineSettings()  # type: ignore
