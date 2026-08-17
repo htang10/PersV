@@ -17,7 +17,7 @@ async def sweep_stale_connections() -> None:
         try:
             logger.info("Cleaning up stale connections...")
             cache = custom_conn_manager.get_cache()
-            logger.info(f"Before cleanup: {len(cache)} entries.")
+            pre_cleanup = len(cache)
             sample = list(islice(cache.keys(), math.ceil(len(cache) * THRESHOLD)))
             if sample:
                 keys = [f"connection:{user_id}" for user_id in sample]
@@ -26,8 +26,13 @@ async def sweep_stale_connections() -> None:
                     if not result:
                         custom_conn_manager.clear_cached_engine(user_id=user_id)
             logger.info(
-                f"After cleanup: {len(custom_conn_manager.get_cache())} entries."
+                "\n".join(
+                    [
+                        f"\nBefore cleanup: {pre_cleanup} entries."
+                        f"After cleanup: {len(custom_conn_manager.get_cache())} entries.",
+                        "Finished.",
+                    ]
+                )
             )
-            logger.info("Finished.")
         except TypeError as e:
             logger.exception(f"Connection cleanup job failed to execute: {e}")
