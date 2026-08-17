@@ -9,12 +9,12 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from sqlalchemy import Engine, create_engine, make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from core.redis import redis_client
-from core.utils import get_current_datetime
-from pipeline.schemas import ConnectionStatus
-from pipeline.utils import LRUEngineCache
+from src.core.redis import redis_client
+from src.core.utils import get_current_datetime
 from src.pipeline.config import pl_settings
 from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
+from src.pipeline.schemas import ConnectionStatus
+from src.pipeline.utils import LRUEngineCache
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,10 @@ class CustomDBConnectionManager:
 
         return engine
 
-    def get_schema(self, user_id: str) -> str | None:
+    def get_schema(self, user_id: str | None) -> str | None:
+        if not user_id:
+            return pl_settings.DEMO_SCHEMA
+
         record = self.get_connection(user_id)
         if not record:
             return None
