@@ -1,94 +1,78 @@
 from langchain.tools import tool
-from langchain_core.language_models import BaseChatModel
-from sqlalchemy import Engine, inspect, text
+from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
+from sqlglot import exp, parse
+from sqlglot.errors import OptimizeError, ParseError
+from sqlglot.optimizer import optimize
+
+# SQLAlchemy dialect names -> sqlglot dialect names
+_DIALECT_MAP = {
+    "postgresql": "postgres",
+    "mariadb": "mysql",
+    "mssql": "tsql",
+}
+
+_DISALLOWED_NODES = (
+    exp.Insert,
+    exp.Update,
+    exp.Delete,
+    exp.Drop,
+    exp.Alter,
+    exp.Create,
+    exp.TruncateTable,
+    exp.Merge,
+)
 
 
 def create_tools(
-    engine: Engine, schema: str | None, model: BaseChatModel
+    engine: Engine, schema_summary: dict[str, dict[str, str]]
 ) -> tuple[list, str]:
     dialect = engine.dialect.name
 
     @tool
-    def sql_list_tables() -> list[str]:
-        """Input to this tool is an empty string, output is a comma-separated list of tables in the database.
-
-        Always use this tool at start. MUST NOT skip!
+    def sql_execute(query: str) -> str:
+        """Input to this tool is your generated SQL query.
+        The tool validates, optimizes, and executes the query against the database.
+        If the query contains errors or disallowed statements, an error message will be returned.
+        If an error is returned, rewrite the query and try again.
         """
-        inspector = inspect(engine)
-        if schema:
-            return inspector.get_table_names(schema=schema)
-        return inspector.get_table_names()
-
-    @tool
-    def sql_check_query(query: str) -> str:
-        """Use this to double-check if your query is correct before executing it.
-
-        Always use this tool before executing a query with `sql_run_query`.
-        """
-
-        checking_prompt = """
-        ```
-        {query}
-        ```
-    
-        **Correctness**
-        - Using NOT IN with NULL values (use NOT EXISTS instead)
-        - Using UNION when UNION ALL should have been used
-        - Using BETWEEN for exclusive ranges
-        - Data type mismatch in predicates
-        - Using the correct number of arguments for functions
-        - Casting to the correct data type
-        - Using the proper columns for joins
-        - Filtering on aggregated values with WHERE instead of HAVING
-        - Referencing a column alias in the same SELECT clause that defines it
-        - Using column positions in ORDER BY that don't match the SELECT list
-    
-        **Completeness**
-        - Missing GROUP BY columns (every non-aggregated column in SELECT must appear in GROUP BY)
-        - Missing join conditions that produce a cartesian product
-        - Overly broad WHERE clauses that match more rows than intended
-    
-        **Safety**
-        - Queries that modify data (INSERT, UPDATE, DELETE, DROP, TRUNCATE, ALTER) — only SELECT statements are permitted
-        - Referencing tables or columns that do not exist in the provided schema
-    
-        **Style & portability**
-        - Properly quoting identifiers that are reserved words or contain special characters
-        - Using database-specific functions where a portable equivalent exists
-    
-        If there are any of the above mistakes, rewrite the query to fix them.
-        If there are no mistakes, reproduce the original query exactly.
-    
-        Output the final SQL query only, with no explanation or markdown formatting.
-    
-        SQL Query:
-        """.format(query=query)
-
-        response = model.invoke(checking_prompt)
-        return response.text.strip()
-
-    @tool
-    def sql_run_query(query: str) -> str:
-        """Run a SQL query and return the result.
-
-        If the query is not correct, an error message will be returned.
-        If an error is returned, rewrite the query, check the query, and try again.
-
-        Args:
-            query: A detailed and correct SQL query that answers user's question.
-
-        Returns:
-            The result of the SQL query after successful execution.
-        """
+        sqlglot_dialect = _DIALECT_MAP.get(dialect, dialect)
 
         try:
-            with Session(engine) as session:
-                result = session.execute(text(query)).fetchall()
-            return str(result)
-        except Exception as e:
-            return f"Error: {e}"
+            trees = parse(query, sqlglot_dialect)
+        except ParseError as e:
+            return f"Syntax error: {e}"
 
-    tools = [sql_list_tables, sql_check_query, sql_run_query]
+        for tree in trees:
+            if tree:
+                for node in tree.walk():
+                    if isinstance(node, _DISALLOWED_NODES):
+                        return f"Disallowed statement: {type(node).__name__} is not allowed."
+
+                if list(tree.find_all(exp.Star)):
+                    return "Avoid SELECT * — specify only the columns needed."
+
+                try:
+                    optimized = optimize(
+                        tree,
+                        schema=schema_summary,
+                        dialect=sqlglot_dialect,
+                        quote_identifiers=False,
+                        identify=False,
+                    )
+                    final_query = optimized.sql(dialect=sqlglot_dialect, pretty=True)
+                except OptimizeError:
+                    final_query = tree.sql(dialect=sqlglot_dialect, pretty=True)
+
+                try:
+                    with Session(engine) as session:
+                        result = session.execute(text(final_query)).fetchall()
+                    return str(result)
+                except Exception as e:
+                    return f"Query execution error: {e}"
+
+        return "No valid query found."
+
+    tools = [sql_execute]
 
     return tools, dialect
