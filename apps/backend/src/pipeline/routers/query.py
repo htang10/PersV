@@ -1,10 +1,10 @@
 # ruff: noqa: ANN201
 from fastapi import APIRouter, HTTPException, status
 
-from pipeline.database import custom_conn_manager
 from src.auth.dependencies import OptionalUser
 from src.pipeline.agent.executor import generate_response
-from src.pipeline.exceptions import AgentError, ConnectionNotFoundError
+from src.pipeline.database import custom_conn_manager
+from src.pipeline.exceptions import AgentError
 from src.pipeline.schemas import QueryResponse
 
 router = APIRouter()
@@ -16,7 +16,7 @@ router = APIRouter()
     description="Ask a question in plain English and get an answer drawn directly from your data.",
     response_model=QueryResponse,
 )
-def query(
+async def query(
     prompt: str,
     user: OptionalUser,
 ):
@@ -30,7 +30,7 @@ def query(
             )
 
     try:
-        return generate_response(question=prompt, user_id=user_id)
+        return await generate_response(question=prompt, user_id=user_id)
     except AgentError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
