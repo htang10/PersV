@@ -63,12 +63,14 @@ def send_login_otp(email: str) -> None:
         email: The recipient's email address.
     """
     with handle_mailing_errors():
-        expiry = 10
+        expiry = auth_settings.OTP_EXP
         raw_code, hashed_code = generate_code()
         save_code(hashed_code, email, expiry)
 
         html_content, text_content = _render_template(
-            "login.html", code=raw_code, expiry=expiry
+            "login.html",
+            code=raw_code,
+            expire_minutes=int(expiry.total_seconds() // 60),
         )
 
         message = MIMEMultipart("alternative")
