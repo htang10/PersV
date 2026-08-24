@@ -1,5 +1,5 @@
 # ruff: noqa: ANN201
-from fastapi import Cookie, HTTPException, Request, status
+from fastapi import Cookie, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
@@ -19,6 +19,7 @@ from src.auth.tasks import send_login_otp_task
 from src.core.schemas import MessageResponse
 
 router = APIRouter()
+REFRESH_TOKEN_EXP_SECONDS = int(auth_settings.REFRESH_TOKEN_EXP.total_seconds())
 
 
 @router.post(
@@ -67,7 +68,7 @@ def login(body: OTPLoginRequest, request: Request, session: AuthSessionDep):
     response.set_cookie(
         key="refresh_token",
         value=create_refresh_token(user_id),
-        max_age=auth_settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES,
+        max_age=REFRESH_TOKEN_EXP_SECONDS,
         secure=True,
         httponly=True,
         samesite="strict",
@@ -82,9 +83,16 @@ def login(body: OTPLoginRequest, request: Request, session: AuthSessionDep):
     The client is responsible for discarding the access token.""",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def logout(refresh_token: str = Cookie(include_in_schema=False)):
+def logout(response: Response, refresh_token: str = Cookie(include_in_schema=False)):
     revoke_refresh_token(refresh_token)
-    return JSONResponse(None, status_code=status.HTTP_204_NO_CONTENT)
+    response.delete_cookie(
+        key="refresh_token",
+        secure=True,
+        httponly=True,
+        samesite="strict",
+    )
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
 
 
 @router.post(
@@ -101,7 +109,7 @@ def refresh_tokens(refresh_token: str = Cookie(include_in_schema=False)):
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
-        max_age=auth_settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=REFRESH_TOKEN_EXP_SECONDS,
         secure=True,
         httponly=True,
         samesite="strict",
