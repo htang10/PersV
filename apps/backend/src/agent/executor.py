@@ -1,15 +1,13 @@
 import asyncio
-import json
 import logging
 import time
 from typing import Any
 
 from anthropic import BadRequestError
 
-from src.pipeline.agent.builder import create_sql_agent
+from src.agent.schemas import QueryResponse
 from src.pipeline.database import custom_conn_manager
 from src.pipeline.exceptions import AgentError
-from src.pipeline.schemas import QueryResponse
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +19,9 @@ async def generate_response(question: str, user_id: str | None) -> QueryResponse
         AgentError: If the agent fails during execution.
     """
     start = time.perf_counter()
-    engine = custom_conn_manager.get_engine(user_id=user_id)
-    schema = custom_conn_manager.get_schema(user_id=user_id)
+    agent = custom_conn_manager.get_agent(user_id=user_id)
 
     try:
-        agent = create_sql_agent(engine=engine, schema=schema)
         stream = await agent.astream_events(
             input={"messages": [{"role": "user", "content": question}]},
             version="v3",
@@ -37,7 +33,7 @@ async def generate_response(question: str, user_id: str | None) -> QueryResponse
         logger.info(f"Total LLM calls: {llm_calls}")
 
         output = await stream.output()
-        return json.loads(output["messages"][-1].content[0]["text"])
+        return output["structured_response"]
     except BadRequestError as e:
         logger.error(f"Agent failed to generate response: {e}.")
         raise AgentError
