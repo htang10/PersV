@@ -1,6 +1,5 @@
 import secrets
 import uuid
-from datetime import timedelta
 
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError, jwt
@@ -17,7 +16,7 @@ def create_access_token(user_id: str) -> str:
         "iss": auth_settings.JWT_ISSUER,
         "sub": user_id,
         "aud": auth_settings.JWT_AUDIENCE,
-        "exp": now + timedelta(minutes=auth_settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
+        "exp": now + auth_settings.ACCESS_TOKEN_EXP,
         "nbf": now,
         "iat": now,
         "jti": str(uuid.uuid4()),
@@ -31,7 +30,7 @@ def create_refresh_token(user_id: str) -> str:
     token = secrets.token_urlsafe(64)
     redis_client.setex(
         f"refresh_token:{token}",
-        timedelta(minutes=auth_settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES),
+        auth_settings.REFRESH_TOKEN_EXP,
         user_id,
     )
     return token
