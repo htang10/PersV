@@ -1,13 +1,7 @@
 import random
 import string
-from hashlib import sha512
 
 import html2text
-
-
-def hash_secret(value: str) -> str:
-    """Hashes a value using SHA-512 and returns the hex digest."""
-    return sha512(value.encode("utf-8")).hexdigest()
 
 
 def html_to_text(html_content: str) -> str:
