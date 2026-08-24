@@ -4,11 +4,12 @@ import math
 from itertools import islice
 
 from src.core.redis import redis_client
+from src.pipeline.config import pl_settings
 from src.pipeline.database import custom_conn_manager
 
 logger = logging.getLogger(__name__)
-THRESHOLD = 0.3
-PERIOD = 30 * 60
+THRESHOLD = pl_settings.CLEANUP_THRESHOLD
+PERIOD = pl_settings.CONN_EXP
 
 
 async def sweep_stale_connections() -> None:
@@ -24,15 +25,11 @@ async def sweep_stale_connections() -> None:
                 results = redis_client.mget(keys)
                 for user_id, result in zip(sample, results):
                     if not result:
-                        custom_conn_manager.clear_cached_engine(user_id=user_id)
+                        custom_conn_manager.clear_cached_connection(user_id=user_id)
+            logger.info(f"Before cleanup: {pre_cleanup} entries.")
             logger.info(
-                "\n".join(
-                    [
-                        f"\nBefore cleanup: {pre_cleanup} entries."
-                        f"After cleanup: {len(custom_conn_manager.get_cache())} entries.",
-                        "Finished.",
-                    ]
-                )
+                f"After cleanup: {len(custom_conn_manager.get_cache())} entries."
             )
+            logger.info("Finished.")
         except TypeError as e:
             logger.exception(f"Connection cleanup job failed to execute: {e}")
