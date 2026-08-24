@@ -1,11 +1,11 @@
 # ruff: noqa: ANN201
 from fastapi import APIRouter, HTTPException, status
 
+from src.agent.executor import generate_response
+from src.agent.schemas import QueryResponse
 from src.auth.dependencies import OptionalUser
-from src.pipeline.agent.executor import generate_response
 from src.pipeline.database import custom_conn_manager
 from src.pipeline.exceptions import AgentError
-from src.pipeline.schemas import QueryResponse
 
 router = APIRouter()
 
