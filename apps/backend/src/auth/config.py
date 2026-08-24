@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,6 +12,9 @@ class AuthSettings(BaseSettings):
     )
     AUTH_DB_URL: PostgresDsn
 
+    OTP_EXP: timedelta
+    OTP_SECRET_KEY: str
+
     SMTP_HOST: str
     SMTP_PORT: int
     SMTP_USERNAME: str
@@ -17,11 +22,11 @@ class AuthSettings(BaseSettings):
     FROM_EMAIL: str
 
     JWT_SECRET_KEY: str
-    JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    JWT_REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     JWT_ISSUER: str
     JWT_AUDIENCE: str
+    JWT_ALGORITHM: str
+    ACCESS_TOKEN_EXP: timedelta
+    REFRESH_TOKEN_EXP: timedelta
 
 
 auth_settings = AuthSettings()
