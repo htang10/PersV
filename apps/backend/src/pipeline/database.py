@@ -10,9 +10,9 @@ from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy import Engine, create_engine, make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from src.agent.builder import create_sql_agent
 from src.core.redis import redis_client
 from src.core.utils import get_current_datetime
-from src.pipeline.agent.builder import create_sql_agent
 from src.pipeline.config import pl_settings
 from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
 from src.pipeline.schemas import ConnectionStatus
