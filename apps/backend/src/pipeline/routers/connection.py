@@ -5,6 +5,7 @@ from fastapi.routing import APIRouter
 
 from src.auth.dependencies import CurrentUser
 from src.core.schemas import MessageResponse
+from src.pipeline.config import pl_settings
 from src.pipeline.database import custom_conn_manager
 from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
 from src.pipeline.schemas import ConnectionConfig, ConnectionStatus, SuccessConnection
@@ -20,7 +21,7 @@ router = APIRouter()
 )
 def connect_demo(current_user: CurrentUser):
     user_id = str(current_user.id)
-    custom_conn_manager.connect(user_id=user_id)
+    custom_conn_manager.connect(user_id=user_id, schema=pl_settings.DEMO_SCHEMA)
     return SuccessConnection(database="demo")
 
 
@@ -36,8 +37,8 @@ def connect(config: ConnectionConfig, current_user: CurrentUser):
     try:
         custom_conn_manager.connect(
             user_id=user_id,
-            url=url,
             schema=config.db_schema,
+            url=url,
         )
     except DBConfigError:
         raise HTTPException(
