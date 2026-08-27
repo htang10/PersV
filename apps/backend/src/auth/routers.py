@@ -16,6 +16,15 @@ from src.auth.service.tokens import (
     rotate_refresh_token,
 )
 from src.auth.tasks import send_login_otp_task
+from src.auth.throttles import (
+    login_1h_email,
+    login_5m_email,
+    login_10m_ip,
+    otp_1h_email,
+    otp_10m_email,
+    otp_10m_ip,
+)
+from src.core.rate_limiter import check_limits, record_hits
 from src.core.schemas import MessageResponse
 
 router = APIRouter()
@@ -29,10 +38,19 @@ REFRESH_TOKEN_EXP_SECONDS = int(auth_settings.REFRESH_TOKEN_EXP.total_seconds())
     Use the returned code with `POST /auth/login` to authenticate.""",
     response_model=MessageResponse,
 )
-def generate_otp(body: OTPRequest):
-    send_login_otp_task.delay(body.email)
+def generate_otp(body: OTPRequest, request: Request):
+    email = body.email
+    limits = [
+        (otp_10m_email, "otp_request", "email", email),
+        (otp_1h_email, "otp_request", "email", email),
+        (otp_10m_ip, "otp_request", "ip", request.client.host),
+    ]
+    check_limits(limits)
 
-    return MessageResponse(message=f"Confirmation code has been sent to {body.email}.")
+    send_login_otp_task.delay(email)
+
+    record_hits(limits)
+    return MessageResponse(message=f"Confirmation code has been sent to {email}.")
 
 
 @router.post(
@@ -46,10 +64,18 @@ def generate_otp(body: OTPRequest):
 def login(body: OTPLoginRequest, request: Request, session: AuthSessionDep):
     email = body.email
     code = body.code
+    limits = [
+        (login_5m_email, "login", "email", email),
+        (login_1h_email, "login", "email", email),
+        (login_10m_ip, "login", "ip", request.client.host),
+    ]
+    check_limits(limits)
+
     try:
         verify_code(email, code)
         delete_code(email)
     except InvalidCode:
+        record_hits(limits)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or passcode."
         )
