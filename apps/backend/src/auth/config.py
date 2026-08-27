@@ -28,5 +28,8 @@ class AuthSettings(BaseSettings):
     ACCESS_TOKEN_EXP: timedelta
     REFRESH_TOKEN_EXP: timedelta
 
+    OTP_GENERATION_THROTTLE: str
+    LOGIN_THROTTLE: str
+
 
 auth_settings = AuthSettings()
