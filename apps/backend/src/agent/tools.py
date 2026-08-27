@@ -65,37 +65,34 @@ def create_tools(
 
         try:
             with Session(engine) as session:
-                distinct_count = session.execute(
+                result = session.execute(
                     text(
-                        f"SELECT COUNT(DISTINCT {quoted_column}) FROM {qualified_table}"
+                        f"SELECT DISTINCT {quoted_column} "
+                        f"FROM {qualified_table} "
+                        f"ORDER BY {quoted_column} "
+                        f"LIMIT 101"
                     )
-                ).scalar_one()
+                )
+                values = [row[0] for row in result]
 
-                if distinct_count == 0:
+                if not values:
                     return "No values found."
 
-                if distinct_count > 100:
+                if len(values) > 100:
                     return (
-                        f"'{column}' has {distinct_count} distinct values — too many to "
-                        f"list. Treat it as free text: use a pattern match (LIKE) instead "
+                        f"'{column}' has more than 100 distinct values."
+                        f"Treat it as free text: use a pattern match (LIKE) instead "
                         f"of an exact-value filter."
                     )
 
                 cap = 50
-                result = session.execute(
-                    text(
-                        f"SELECT DISTINCT {quoted_column} FROM {qualified_table} ORDER BY {quoted_column} LIMIT :cap"
-                    ),
-                    {"cap": cap},
-                )
-                values = [row[0] for row in result]
+                if len(values) > cap:
+                    return (
+                        f"'{column}' has {len(values)} distinct values."
+                        f"Here are {cap} examples: {values[:cap]}"
+                    )
 
-            if distinct_count > cap:
-                return (
-                    f"Showing {cap} of {distinct_count} distinct values (not exhaustive, "
-                    f"alphabetical sample): {values}"
-                )
-            return f"All {distinct_count} distinct values: {values}"
+            return f"All {len(values)} distinct values: {values}"
         except SQLAlchemyError as e:
             return f"Error retrieving distinct values: {e}"
 
@@ -121,10 +118,13 @@ def create_tools(
                     if isinstance(node, _DISALLOWED_NODES):
                         return f"Query error: Disallowed statement: {type(node).__name__} is not allowed."
 
-                if list(tree.find_all(exp.Star)):
-                    return (
-                        "Query error: Avoid SELECT * — specify only the columns needed."
-                    )
+                for select in tree.find_all(exp.Select):
+                    for expression in select.expressions:
+                        if isinstance(expression, exp.Star) or (
+                            isinstance(expression, exp.Column)
+                            and isinstance(expression.this, exp.Star)
+                        ):
+                            return "Query error: Avoid SELECT * — specify only the columns needed."
 
                 try:
                     optimized = optimize(
