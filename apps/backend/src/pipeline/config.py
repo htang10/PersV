@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,7 +15,7 @@ class PipelineSettings(BaseSettings):
     DEMO_DB_URL: PostgresDsn
     DEMO_SCHEMA: str
     ENCRYPTION_KEY: str
-    CONN_EXP: int
+    CONN_EXP: timedelta
     CACHE_CAPACITY: int
     CLEANUP_THRESHOLD: float
 
