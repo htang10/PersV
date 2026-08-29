@@ -12,6 +12,8 @@ class AuthSettings(BaseSettings):
     )
     AUTH_DB_URL: PostgresDsn
 
+    ANON_ID_EXP: timedelta
+
     OTP_EXP: timedelta
     OTP_SECRET_KEY: str
 
@@ -30,6 +32,7 @@ class AuthSettings(BaseSettings):
 
     OTP_GENERATION_THROTTLE: str
     LOGIN_THROTTLE: str
+    ANON_SESSION_THROTTLE: str
 
 
-auth_settings = AuthSettings()
+auth_settings = AuthSettings()  # type: ignore
