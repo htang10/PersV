@@ -3,7 +3,8 @@ from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
-from src.auth.dependencies import CurrentUser
+from src.auth.dependencies import AuthUserId, CurrentUserId, OptionalUserId
+from src.auth.service.identities import delete_anon_id_cookie
 from src.core.schemas import MessageResponse
 from src.pipeline.config import pl_settings
 from src.pipeline.database import custom_conn_manager
@@ -19,8 +20,7 @@ router = APIRouter()
     description="Connect instantly to the built-in demo database. No credentials required.",
     response_model=SuccessConnection,
 )
-def connect_demo(current_user: CurrentUser):
-    user_id = str(current_user.id)
+def connect_demo(user_id: CurrentUserId):
     custom_conn_manager.connect(user_id=user_id, schema=pl_settings.DEMO_SCHEMA)
     return SuccessConnection(database="demo")
 
@@ -31,8 +31,7 @@ def connect_demo(current_user: CurrentUser):
     description="Establish a database connection using the provided credentials.",
     response_model=SuccessConnection,
 )
-def connect(config: ConnectionConfig, current_user: CurrentUser):
-    user_id = str(current_user.id)
+def connect(config: ConnectionConfig, user_id: AuthUserId):
     url = f"{config.dbms.scheme}://{config.username}:{config.password}@{config.host}:{config.port}/{config.db}"
     try:
         custom_conn_manager.connect(
@@ -54,8 +53,7 @@ def connect(config: ConnectionConfig, current_user: CurrentUser):
     description="Identify whether an active database connection is currently established.",
     response_model=ConnectionStatus,
 )
-def is_connected(current_user: CurrentUser):
-    user_id = str(current_user.id)
+def is_connected(user_id: OptionalUserId):
     return custom_conn_manager.get_connection_status(user_id=user_id)
 
 
@@ -65,13 +63,14 @@ def is_connected(current_user: CurrentUser):
     description="Terminate the active database connection associated with the provided token.",
     response_model=MessageResponse,
 )
-def disconnect(current_user: CurrentUser):
-    user_id = str(current_user.id)
+def disconnect(user_id: OptionalUserId):
     try:
         # Terminate connection
         custom_conn_manager.disconnect(user_id=user_id)
         custom_conn_manager.clear_user_lock(user_id=user_id)
-        return JSONResponse({"message": "Connection successfully terminated."})
+        response = JSONResponse({"message": "Connection successfully terminated."})
+        delete_anon_id_cookie(response)
+        return response
     except ConnectionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
