@@ -1,6 +1,7 @@
 import secrets
 import uuid
 
+from fastapi import Response
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 
@@ -8,6 +9,8 @@ from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidToken
 from src.core.redis import redis_client
 from src.core.utils import get_current_datetime
+
+REFRESH_TOKEN_EXP_SECONDS = int(auth_settings.REFRESH_TOKEN_EXP.total_seconds())
 
 
 def create_access_token(user_id: str) -> str:
@@ -92,3 +95,23 @@ def rotate_refresh_token(old_token: str) -> tuple[str, str]:
     new_refresh = create_refresh_token(user_id)
 
     return new_access, new_refresh
+
+
+def set_refresh_token_cookie(response: Response, refresh_token: str) -> None:
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=REFRESH_TOKEN_EXP_SECONDS,
+        secure=True,
+        httponly=True,
+        samesite="strict",
+    )
+
+
+def delete_refresh_token_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key="refresh_token",
+        secure=True,
+        httponly=True,
+        samesite="strict",
+    )
