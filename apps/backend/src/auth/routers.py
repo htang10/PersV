@@ -3,7 +3,6 @@ from fastapi import Cookie, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
-from src.auth.config import auth_settings
 from src.auth.dependencies import AuthSessionDep
 from src.auth.exceptions import InvalidCode, UserNotFound
 from src.auth.repository import create_user, get_user_by_email, update_login_metadata
@@ -12,8 +11,10 @@ from src.auth.service.otp import delete_code, verify_code
 from src.auth.service.tokens import (
     create_access_token,
     create_refresh_token,
+    delete_refresh_token_cookie,
     revoke_refresh_token,
     rotate_refresh_token,
+    set_refresh_token_cookie,
 )
 from src.auth.tasks import send_login_otp_task
 from src.auth.throttles import (
@@ -28,7 +29,6 @@ from src.core.rate_limiter import check_limits, record_hits
 from src.core.schemas import MessageResponse
 
 router = APIRouter()
-REFRESH_TOKEN_EXP_SECONDS = int(auth_settings.REFRESH_TOKEN_EXP.total_seconds())
 
 
 @router.post(
@@ -61,7 +61,7 @@ def generate_otp(body: OTPRequest, request: Request):
     Returns a JWT access token and refresh token on success.""",
     response_model=AuthResponse,
 )
-def login(body: OTPLoginRequest, request: Request, session: AuthSessionDep):
+def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
     email = body.email
     code = body.code
     limits = [
@@ -91,14 +91,7 @@ def login(body: OTPLoginRequest, request: Request, session: AuthSessionDep):
 
     user_id = str(user.id)
     response = JSONResponse({"token": create_access_token(user_id), "type": "Bearer"})
-    response.set_cookie(
-        key="refresh_token",
-        value=create_refresh_token(user_id),
-        max_age=REFRESH_TOKEN_EXP_SECONDS,
-        secure=True,
-        httponly=True,
-        samesite="strict",
-    )
+    set_refresh_token_cookie(response, refresh_token=create_refresh_token(user_id))
     return response
 
 
@@ -111,12 +104,7 @@ def login(body: OTPLoginRequest, request: Request, session: AuthSessionDep):
 )
 def logout(response: Response, refresh_token: str = Cookie(include_in_schema=False)):
     revoke_refresh_token(refresh_token)
-    response.delete_cookie(
-        key="refresh_token",
-        secure=True,
-        httponly=True,
-        samesite="strict",
-    )
+    delete_refresh_token_cookie(response)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
@@ -132,12 +120,5 @@ def logout(response: Response, refresh_token: str = Cookie(include_in_schema=Fal
 def refresh_tokens(refresh_token: str = Cookie(include_in_schema=False)):
     new_access_token, new_refresh_token = rotate_refresh_token(refresh_token)
     response = JSONResponse({"token": new_access_token, "type": "Bearer"})
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh_token,
-        max_age=REFRESH_TOKEN_EXP_SECONDS,
-        secure=True,
-        httponly=True,
-        samesite="strict",
-    )
+    set_refresh_token_cookie(response, refresh_token=new_refresh_token)
     return response
