@@ -8,13 +8,13 @@ from src.pipeline.config import pl_settings
 from src.pipeline.database import custom_conn_manager
 
 logger = logging.getLogger(__name__)
+PERIOD = pl_settings.CLEANUP_PERIOD
 THRESHOLD = pl_settings.CLEANUP_THRESHOLD
-PERIOD = pl_settings.CONN_EXP
 
 
 async def sweep_stale_connections() -> None:
     while True:
-        await asyncio.sleep(PERIOD)
+        await asyncio.sleep(PERIOD.total_seconds())
         try:
             logger.info("Cleaning up stale connections...")
             cache = custom_conn_manager.get_cache()
