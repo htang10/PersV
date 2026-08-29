@@ -12,11 +12,16 @@ class PipelineSettings(BaseSettings):
     )
     ANTHROPIC_MODEL: str
     ANTHROPIC_API_KEY: str
+
     DEMO_DB_URL: PostgresDsn
     DEMO_SCHEMA: str
     ENCRYPTION_KEY: str
-    CONN_EXP: timedelta
+
+    AUTH_CONN_EXP: timedelta
+    ANON_CONN_EXP: timedelta
+
     CACHE_CAPACITY: int
+    CLEANUP_PERIOD: timedelta
     CLEANUP_THRESHOLD: float
 
 
