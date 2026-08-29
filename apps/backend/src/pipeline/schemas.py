@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Annotated, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 
 class DBMS(StrEnum):
@@ -48,14 +49,15 @@ class ConnectionConfig(BaseModel):
     db_schema: str | None = Field(
         default=None,
         alias="schema",
-        description="The schema to set as the search path. Only applicable to database systems that support schemas, such as PostgreSQL. Leave empty for others.",
+        description="The schema to set as the search path. Only applicable to database systems that support schemas,"
+        "such as PostgreSQL. Leave empty for others.",
     )
 
 
 class SuccessConnection(BaseModel):
     status: str = Field(default="connected")
     database: str = Field(
-        description="Database name is set as 'chook' if not specified.",
+        description="Database name is set as 'demo' if not specified.",
     )
 
 
@@ -65,3 +67,51 @@ class ConnectionStatus(BaseModel):
         default=None,
         description="Name of the connected database, or 'null' if not connected.",
     )
+
+
+class ConnectionPayload(BaseModel):
+    db_schema: str
+    connected_at: str
+
+
+class DemoPayload(ConnectionPayload):
+    target: Literal["demo"] = "demo"
+
+
+class CustomPayload(ConnectionPayload):
+    target: Literal["custom"] = "custom"
+    connection_details: ConnectionDetails
+
+
+class ConnectionDetails(BaseModel):
+    dbms: str
+    url: str
+    db: str | None
+
+
+ConnectionRecord = Annotated[
+    DemoPayload | CustomPayload,
+    Field(discriminator="target"),
+]
+connection_adapter = TypeAdapter(ConnectionRecord)
+
+EngineT = TypeVar("EngineT")
+AgentT = TypeVar("AgentT")
+
+
+class CacheEntry(BaseModel, Generic[EngineT, AgentT]):
+    target: str
+    engine: EngineT | None
+    agent: AgentT | None
+
+
+class DemoCacheEntry(CacheEntry):
+    target: Literal["demo"] = "demo"
+    engine: Literal[None] = None
+    agent: Literal[None] = None
+
+
+class CustomCacheEntry(CacheEntry, Generic[EngineT, AgentT]):
+    target: Literal["custom"] = "custom"
+    engine: EngineT
+    agent: AgentT
