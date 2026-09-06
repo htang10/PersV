@@ -5,8 +5,9 @@ from fastapi.responses import JSONResponse
 from src.auth.exceptions import InvalidToken
 
 
-async def token_error_handler(request: Request, exc: InvalidToken) -> JSONResponse:
+async def token_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handles invalid token errors and returns an authentication error response."""
+    assert isinstance(exc, InvalidToken)
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
