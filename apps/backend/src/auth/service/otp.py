@@ -5,10 +5,12 @@ from datetime import timedelta
 
 from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidCode
-from src.core.redis import redis_client
+from src.core.redis_client import redis_client
 
 
 def hash_secret(otp: str, secret: bytes) -> str:
+    """Hashes an OTP with a server-side secret key (HMAC), so stored hashes can't be brute-forced
+    offline even if the Redis store is compromised."""
     return hmac.new(secret, otp.encode(), hashlib.sha256).hexdigest()
 
 

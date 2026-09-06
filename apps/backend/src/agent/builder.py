@@ -25,12 +25,11 @@ model = ChatAnthropic(
 def create_sql_agent(engine: Engine, schema: str) -> CompiledStateGraph:
     """Initializes a SQL agent tailored to the provided database connection.
 
-    The agent is powered by GPT-5.5 and is configured to generate and execute read-only queries,
-    returning structured respones in natural language.
+    The agent is configured to generate and execute read-only queries, returning structured responses in natural language.
 
     Args:
-        engine: The SQLAlchemy engine representing the target database connection.
-        schema: The schema to scope queries to. If None, the default schema is used.
+        engine: SQLAlchemy engine connected to the target database.
+        schema: The schema to scope queries to.
     """
     schema_summary = _build_schema_summary(engine=engine, schema=schema)
     tools, dialect = create_tools(
@@ -51,6 +50,16 @@ def create_sql_agent(engine: Engine, schema: str) -> CompiledStateGraph:
 
 
 def _build_schema_summary(engine: Engine, schema: str) -> dict[str, dict[str, str]]:
+    """Inspects the database schema and build a mapping of tables to their columns and types.
+
+    Args:
+        engine: SQLAlchemy engine connected to the target database.
+        schema: Name of the database schema to inspect.
+
+    Returns:
+        A dict mapping each table name to a dict of its column names and
+        SQL types.
+    """
     inspector = inspect(engine)
 
     result = {}

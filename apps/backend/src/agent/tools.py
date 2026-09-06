@@ -28,6 +28,19 @@ _DISALLOWED_NODES = (
 def create_tools(
     engine: Engine, schema: str, schema_summary: dict[str, dict[str, str]]
 ) -> tuple[list, str]:
+    """Builds the LangChain tools the SQL agent uses to explore data and run queries.
+
+    Args:
+        engine: SQLAlchemy engine connected to the target database.
+        schema: Name of the database schema the tools operate against.
+        schema_summary: Mapping of table names to their columns and types,
+            used to validate inputs and optimize queries.
+
+    Returns:
+        A tuple of `(tools, dialect)`, where `tools` is the list of LangChain
+        tools (`get_distinct_values`, `sql_execute`) and `dialect` is the
+        SQLAlchemy dialect name of the engine.
+    """
     dialect = engine.dialect.name
 
     @tool
