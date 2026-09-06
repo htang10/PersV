@@ -8,9 +8,16 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-    MIGR_DB_URL: PostgresDsn
-    REDIS_URL: RedisDsn
     DEBUG: bool
 
+    MIGR_DB_URL: PostgresDsn
 
-settings = Settings()
+    REDIS_URL: RedisDsn
+    REDIS_USERNAME: str
+    REDIS_PASSWORD: str
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_MAX_CONN: int
+
+
+settings = Settings()  # type: ignore
