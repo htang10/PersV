@@ -7,13 +7,17 @@ from jose import JWTError, jwt
 
 from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidToken
-from src.core.redis import redis_client
+from src.core.redis_client import redis_client
 from src.core.utils import get_current_datetime
 
 REFRESH_TOKEN_EXP_SECONDS = int(auth_settings.REFRESH_TOKEN_EXP.total_seconds())
 
 
 def create_access_token(user_id: str) -> str:
+    """Creates a short-lived, signed JWT access token for the given user.
+
+    Standard claims (aud/iss/exp/nbf/iat/jti) are included so the token can be validated statelessly.
+    """
     now = get_current_datetime()
     payload = {
         "iss": auth_settings.JWT_ISSUER,
@@ -30,6 +34,7 @@ def create_access_token(user_id: str) -> str:
 
 
 def create_refresh_token(user_id: str) -> str:
+    """Creates a refresh token, an opaque random string, and stores it in Redis."""
     token = secrets.token_urlsafe(64)
     redis_client.setex(
         f"refresh_token:{token}",

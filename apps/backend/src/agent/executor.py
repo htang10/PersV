@@ -7,21 +7,33 @@ from anthropic import BadRequestError
 
 from src.agent.schemas import QueryResponse
 from src.pipeline.database import custom_conn_manager
-from src.pipeline.exceptions import AgentError
+from src.pipeline.exceptions import AgentError, ConnectionNotFoundError
 
 logger = logging.getLogger(__name__)
 
 
-async def generate_response(question: str, user_id: str | None) -> QueryResponse:
+async def generate_response(question: str, user_id: str) -> QueryResponse:
     """Generates a response to the provided question using the SQL agent.
 
+    Streams the agent's execution, logging each LLM message and tool call as
+    they arrive, then returns the final structured response.
+
+    Args:
+        question: The user's prompt.
+        user_id: ID of the user issuing the prompt, used to look up their
+            agent connection.
+
+    Returns:
+        The agent's structured response to the question.
+
     Raises:
-        AgentError: If the agent fails during execution.
+        AgentError: Either the agent fails during execution or
+            no connection associated with the provided ID was found.
     """
     start = time.perf_counter()
-    agent = custom_conn_manager.get_agent(user_id=user_id)
 
     try:
+        agent = custom_conn_manager.get_agent(user_id=user_id)
         stream = await agent.astream_events(
             input={"messages": [{"role": "user", "content": question}]},
             version="v3",
@@ -34,7 +46,7 @@ async def generate_response(question: str, user_id: str | None) -> QueryResponse
 
         output = await stream.output()
         return output["structured_response"]
-    except BadRequestError as e:
+    except (BadRequestError, ConnectionNotFoundError) as e:
         logger.error(f"Agent failed to generate response: {e}.")
         raise AgentError
     finally:
@@ -43,6 +55,11 @@ async def generate_response(question: str, user_id: str | None) -> QueryResponse
 
 
 async def _consume_messages(stream: Any) -> int:
+    """Consumes and logs each LLM message from the agent event stream.
+
+    Returns:
+        The number of LLM messages consumed.
+    """
     llm_calls = 0
     async for message in stream.messages:
         full_message = await message.output
@@ -57,6 +74,7 @@ async def _consume_messages(stream: Any) -> int:
 
 
 async def _consume_tool_calls(stream: Any) -> None:
+    """Consumes and logs each tool call from the agent event stream."""
     async for call in stream.tool_calls:
         async for delta in call.output_deltas:
             print(delta, end="", flush=True)

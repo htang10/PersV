@@ -22,6 +22,15 @@ logger = logging.getLogger(__name__)
 
 
 def _render_template(template_name: str, **kwargs: Any) -> tuple[str, str]:
+    """Renders a Jinja template into HTML and derives a plain-text version from it.
+
+    Args:
+        template_name: Name of the template file to render, relative to the
+            "templates" package directory.
+
+    Returns:
+        A tuple of `(html_content, text_content)` representing the email template in HTML and text versions.
+    """
     env = Environment(
         loader=PackageLoader("src.auth", "templates"), autoescape=select_autoescape()
     )

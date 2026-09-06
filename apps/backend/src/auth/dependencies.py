@@ -23,6 +23,7 @@ optional_bearer = HTTPBearer(auto_error=False)
 
 
 def get_auth_db() -> Generator[Session, Any, None]:
+    """Dependency that yields a database session for authentication."""
     with Session(AUTH_ENGINE) as session:
         yield session
 
@@ -30,6 +31,14 @@ def get_auth_db() -> Generator[Session, Any, None]:
 def get_auth_user_id(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(required_bearer)],
 ) -> str:
+    """Authenticates a user given their credentials.
+
+    Returns:
+        The user's ID.
+
+    Raises:
+        401: if no token is provided, or it fails validation.
+    """
     try:
         payload = validate_access(credentials)
         return str(payload["sub"])
@@ -43,6 +52,15 @@ def get_active_auth_user_id(
     auth_user_id: str = Depends(get_auth_user_id),
     session: Session = Depends(get_auth_db),
 ) -> str:
+    """Authenticates a user given their credentials, but also require the user's
+    account to be active.
+
+    Returns:
+        The user's ID.
+
+    Raises:
+        403: if the user is not active.
+    """
     auth_user = get_user_by_id(auth_user_id, session)
     if not auth_user.is_active:
         raise HTTPException(
@@ -54,6 +72,14 @@ def get_active_auth_user_id(
 def get_optional_auth_user_id(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(optional_bearer)],
 ) -> str | None:
+    """Authenticates a user given their credentials.
+
+    Returns:
+        The user's ID.
+
+    Returns:
+        None if no token is provided or validation fails.
+    """
     payload = validate_access(credentials)
     if not payload:
         return None
@@ -64,6 +90,12 @@ def get_optional_current_user_id(
     user_id: str | None = Depends(get_optional_auth_user_id),
     anon_id: str | None = Cookie(default=None, include_in_schema=False),
 ) -> str | None:
+    """Detects whether the current user is a guest/anonymous or an authenticated user.
+
+    Returns:
+        The user's id.
+        None if the user is not found/recognized.
+    """
     if user_id:
         with Session(AUTH_ENGINE) as session:
             return get_active_auth_user_id(
@@ -83,6 +115,13 @@ def get_current_user_id(
     user_id: str | None = Depends(get_optional_auth_user_id),
     anon_id: str | None = Cookie(default=None, include_in_schema=False),
 ) -> str:
+    """Detects whether the current user is a guest/anonymous or an authenticated user.
+
+    If not yet recognized, generates a new anonymous ID for the current user.
+
+    Returns:
+        The user's id, or a newly generated anonymous ID.
+    """
     current_user_id = get_optional_current_user_id(
         user_id=user_id,
         anon_id=anon_id,

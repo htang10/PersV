@@ -17,7 +17,13 @@ class OTPRequest(BaseModel):
 
 
 class OTPLoginRequest(BaseModel):
-    """Request payload for OTP authentication."""
+    """Request payload for OTP authentication.
+
+    Attributes:
+        email: The recipient's email address.
+            Automatically stripped of leading/trailing whitespace and lowercased before validation.
+        code: The 6-digit one-time password sent to the user's email.
+    """
 
     email: NormalizedEmail
     code: str = Field(
@@ -28,7 +34,12 @@ class OTPLoginRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    """Authentication credentials issued by the server."""
+    """Authentication credentials issued by the server.
+
+    Attributes:
+        access_token: Short-lived JWT access token used for API authentication.
+        token_type: Authentication scheme used in the Authorization header.
+    """
 
     access_token: str = Field(
         description="Short-lived JWT access token used for API authentication."
