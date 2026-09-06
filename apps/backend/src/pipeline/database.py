@@ -14,7 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from src.agent.builder import create_sql_agent
 from src.auth.service.identities import is_valid_anon_id
-from src.core.redis import redis_client
+from src.core.redis_client import redis_client
 from src.core.utils import get_current_datetime
 from src.pipeline.config import pl_settings
 from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
@@ -117,42 +117,35 @@ class CustomDBConnectionManager:
         )
         return redis_client.expire(ConnectionKey.for_user(user_id=user_id), ttl)
 
-    def get_agent(self, user_id: str | None = None) -> CompiledStateGraph:
-        if not user_id:  # GUESTS
-            agent = DEMO_AGENT
-        else:  # USERS
-            agent = self.__get_cached_agent(user_id=user_id)
-            if not agent:
-                record = self.get_connection(user_id)
-                if not record:  # Not connected
-                    raise ConnectionNotFoundError
-                if isinstance(record, DemoPayload):  # Connected to demo
-                    agent = DEMO_AGENT
-                    self.__cache_connection(
-                        user_id=user_id, cache_entry=DemoCacheEntry()
-                    )
-                else:  # Connected to a custom database
-                    with self.__get_user_lock(
-                        user_id=user_id
-                    ):  # Another thread may have populated the cache while we waited.
-                        agent = self.__get_cached_agent(user_id)
-                        if not agent:
-                            encrypted_url = record.connection_details.url
-                            recorded_url = self.__decrypt_connection(
-                                encrypted=encrypted_url
-                            )
-                            engine = self.__build_engine(url=recorded_url)
+    def get_agent(self, user_id: str) -> CompiledStateGraph:
+        agent = self.__get_cached_agent(user_id=user_id)
+        if not agent:
+            record = self.get_connection(user_id)
+            if not record:  # Not connected
+                raise ConnectionNotFoundError
+            if isinstance(record, DemoPayload):  # Connected to demo
+                agent = DEMO_AGENT
+                self.__cache_connection(user_id=user_id, cache_entry=DemoCacheEntry())
+            else:  # Connected to a custom database
+                with self.__get_user_lock(
+                    user_id=user_id
+                ):  # Another thread may have populated the cache while we waited.
+                    agent = self.__get_cached_agent(user_id)
+                    if not agent:
+                        encrypted_url = record.connection_details.url
+                        recorded_url = self.__decrypt_connection(
+                            encrypted=encrypted_url
+                        )
+                        engine = self.__build_engine(url=recorded_url)
 
-                            agent = create_sql_agent(
-                                engine=engine, schema=self.get_schema(user_id=user_id)
-                            )
+                        agent = create_sql_agent(
+                            engine=engine, schema=self.get_schema(user_id=user_id)
+                        )
 
-                            self.__cache_connection(
-                                user_id=user_id,
-                                cache_entry=CustomCacheEntry(
-                                    engine=engine, agent=agent
-                                ),
-                            )
+                        self.__cache_connection(
+                            user_id=user_id,
+                            cache_entry=CustomCacheEntry(engine=engine, agent=agent),
+                        )
 
         return agent
 

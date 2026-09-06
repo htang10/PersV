@@ -16,6 +16,7 @@ from src.core.handlers import (
 )
 from src.core.health import check_health
 from src.core.log import setup_logging
+from src.core.redis_client import redis_client
 from src.pipeline.database import DEMO_ENGINE
 from src.pipeline.routers import connection, query
 from src.pipeline.tasks import sweep_stale_connections
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
         sys.exit(1)
     sweep_task = asyncio.create_task(sweep_stale_connections())
     yield
+    redis_client.close()
     AUTH_ENGINE.dispose()
     DEMO_ENGINE.dispose()
     sweep_task.cancel()

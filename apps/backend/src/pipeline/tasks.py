@@ -3,7 +3,7 @@ import logging
 import math
 from itertools import islice
 
-from src.core.redis import redis_client
+from src.core.redis_client import redis_client
 from src.pipeline.config import pl_settings
 from src.pipeline.database import custom_conn_manager
 

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.auth.dependencies import AUTH_ENGINE
-from src.core.redis import redis_client
+from src.core.redis_client import redis_client
 from src.core.schemas import HealthStatus
 from src.pipeline.database import DEMO_ENGINE
 
