@@ -1,6 +1,7 @@
-import redis.asyncio as redis
-from redis.asyncio.retry import Retry
+import redis as redis
 from redis.backoff import ExponentialWithJitterBackoff
+from redis.cache import CacheConfig
+from redis.retry import Retry
 
 from src.core.config import settings
 
@@ -12,6 +13,7 @@ redis_client = redis.Redis(
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
     protocol=3,
+    cache_config=CacheConfig(),
     max_connections=settings.REDIS_MAX_CONN,
     decode_responses=True,
     retry=retry,
