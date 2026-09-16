@@ -22,6 +22,16 @@ A tool that lets user ask plain-English questions to retrieve data from a relati
 
 4. **One language, any database.** Instead of learning a new query dialect for every database management system (DBMS), users just ask their question the same way every time, while the translation is handled underneath.
 
+## Live API 🚀
+
+https://persv.onrender.com/docs
+
+Interactive API docs (Swagger UI) for the deployed backend. Try the endpoints directly!
+
+![API Screenshot](docs/assets/api-docs.png)
+
+Frontend UI is under active development 🔬. This is the current way to interact with the live system.
+
 ## Demo
 
 Insert gif or link to demo
