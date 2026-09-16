@@ -1,0 +1,82 @@
+# ruff: noqa: ANN201
+import logging
+
+from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRouter
+
+from src.auth.dependencies import AuthUserId, CurrentUserId, OptionalUserId
+from src.auth.service.identities import delete_anon_id_cookie
+from src.core.schemas import MessageResponse
+from src.pipeline.config import pl_settings
+from src.pipeline.database import custom_conn_manager
+from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
+from src.pipeline.schemas import ConnectionConfig, ConnectionStatus, SuccessConnection
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
+
+@router.post(
+    "/connect/demo",
+    summary="Connect to the demo dataset",
+    description="Connect instantly to the built-in demo database. No credentials required.",
+    response_model=SuccessConnection,
+)
+def connect_demo(user_id: CurrentUserId):
+    custom_conn_manager.connect(user_id=user_id, schema=pl_settings.PG_DEMO_SCHEMA)
+    return SuccessConnection(database="demo")
+
+
+@router.post(
+    "/connect/custom",
+    summary="Connect to a custom database",
+    description="Establish a database connection using the provided credentials.",
+    response_model=SuccessConnection,
+)
+def connect(config: ConnectionConfig, user_id: AuthUserId):
+    url = f"{config.dbms.scheme}://{config.username}:{config.password}@{config.host}:{config.port}/{config.db}"
+    try:
+        custom_conn_manager.connect(
+            user_id=user_id,
+            schema=config.db_schema,
+            url=url,
+        )
+    except DBConfigError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not connect to database. Check your credentials and try again.",
+        )
+    return SuccessConnection(database=config.db)
+
+
+@router.get(
+    "/is-connected",
+    summary="View connection status",
+    description="Identify whether an active database connection is currently established.",
+    response_model=ConnectionStatus,
+)
+def is_connected(user_id: OptionalUserId):
+    return custom_conn_manager.get_connection_status(user_id=user_id)
+
+
+@router.post(
+    "/disconnect",
+    summary="Disconnect from the database",
+    description="Terminate the active database connection associated with the provided token.",
+    response_model=MessageResponse,
+)
+def disconnect(user_id: OptionalUserId):
+    try:
+        # Terminate connection
+        custom_conn_manager.disconnect(user_id=user_id)
+        custom_conn_manager.clear_user_lock(user_id=user_id)
+        response = JSONResponse({"message": "Connection successfully terminated."})
+        delete_anon_id_cookie(response)
+        return response
+    except ConnectionNotFoundError:
+        logger.warning("User did not establish a database connection before querying.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No active database connection found.",
+        )

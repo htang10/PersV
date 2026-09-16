@@ -1,0 +1,56 @@
+import logging
+
+from sqlalchemy import select, update
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import Session
+
+from src.auth.exceptions import UserNotFound
+from src.auth.models import User
+from src.auth.utils import display_name_from_email
+from src.core.utils import get_current_datetime
+
+logger = logging.getLogger(__name__)
+
+
+def get_user_by_id(user_id: str, session: Session) -> User:
+    """Retrieves a user by ID.
+
+    Raises:
+        UserNotFound: If no user exists with the given ID.
+    """
+    try:
+        return session.execute(select(User).filter_by(id=user_id)).scalar_one()
+    except NoResultFound as e:
+        logger.warning(e)
+        raise UserNotFound
+
+
+def get_user_by_email(email: str, session: Session) -> User:
+    """Retrieves a user by email address.
+
+    Raises:
+        UserNotFound: If no user exists with the given email address.
+    """
+    try:
+        return session.execute(select(User).filter_by(email=email)).scalar_one()
+    except NoResultFound as e:
+        logger.warning(e)
+        raise UserNotFound
+
+
+def create_user(email: str, session: Session) -> User:
+    user = User(email=email, display_name=display_name_from_email(email))
+    session.add(user)
+    session.commit()
+    return user
+
+
+def update_login_metadata(user: User, ip_address: str, session: Session) -> None:
+    session.execute(
+        update(User)
+        .where(User.email == user.email)
+        .values(
+            last_login_at=get_current_datetime().isoformat(), last_login_ip=ip_address
+        )
+    )
+    session.commit()
