@@ -15,4 +15,4 @@ ENV PATH="/backend/.venv/bin:$PATH"
 
 EXPOSE 8000
 
-CMD ["fastapi", "run", "--workers", "5"]
+CMD ["sh", "-c", "fastapi run --workers ${WEB_CONCURRENCY:-5}"]
