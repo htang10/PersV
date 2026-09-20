@@ -1,14 +1,14 @@
 # ruff: noqa: ANN201
 import logging
 
-from fastapi import Cookie, HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse
+from fastapi import Cookie, HTTPException, Request, status
 from fastapi.routing import APIRouter
 
+from src.auth.config import auth_settings
 from src.auth.dependencies import AuthSessionDep, AuthUserId
-from src.auth.exceptions import InvalidCode, UserNotFound
+from src.auth.exceptions import InvalidAuthToken, InvalidEmailOrOTP, UserNotFound
 from src.auth.repository import create_user, get_user_by_email, update_login_metadata
-from src.auth.schemas import AuthResponse, OTPLoginRequest, OTPRequest
+from src.auth.schemas import AuthResponse, OTPLoginRequest, OTPRequest, OTPResponse
 from src.auth.service.otp import delete_code, verify_code
 from src.auth.service.tokens import (
     create_access_token,
@@ -29,18 +29,18 @@ from src.auth.throttles import (
     otp_10m_ip,
 )
 from src.core.rate_limiter import check_limits, record_hits
-from src.core.schemas import MessageResponse
+from src.core.responses import APIResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.post(
-    "/generate-otp",
+    "/otp",
     summary="Request a one-time password",
     description="""Sends a time-limited one-time password to the provided email address.
     Use the returned code with `POST /auth/login` to authenticate.""",
-    response_model=MessageResponse,
+    response_model=OTPResponse,
 )
 def generate_otp(body: OTPRequest, request: Request):
     email = body.email
@@ -50,19 +50,19 @@ def generate_otp(body: OTPRequest, request: Request):
         (otp_10m_ip, "otp_request", "ip", request.client.host),
     ]
     check_limits(limits)
-
     send_login_otp_task.delay(email)
-
     record_hits(limits)
-    return MessageResponse(message=f"Confirmation code has been sent to {email}.")
+
+    expiry = auth_settings.OTP_EXP.total_seconds()
+    return OTPResponse(to=email, expires_in=expiry)
 
 
 @router.post(
     "/login",
     summary="Authenticate with a one-time password",
-    description="""Verifies the one-time password sent to the provided email.
+    description="""Verifies the code sent to the provided email.
     Creates a new account if the email is unrecognized. 
-    Returns a JWT access token and refresh token on success.""",
+    Generates authentication tokens on success.""",
     response_model=AuthResponse,
 )
 def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
@@ -78,10 +78,11 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
     try:
         verify_code(email, code)
         delete_code(email)
-    except InvalidCode:
+    except InvalidEmailOrOTP:
         record_hits(limits)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or passcode."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect email or passcode.",
         )
 
     try:  # Login
@@ -96,8 +97,10 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
     update_login_metadata(user=user, ip_address=ip_address, session=session)
 
     user_id = str(user.id)
-    response = JSONResponse(
-        {"token": create_access_token(user_id=user_id), "type": "Bearer"}
+    response = APIResponse(
+        content=AuthResponse(
+            token=create_access_token(user_id=user_id),
+        ).model_dump()
     )
     set_refresh_token_cookie(
         response, refresh_token=create_refresh_token(user_id=user_id)
@@ -110,9 +113,8 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
     summary="Revoke the current session",
     description="""Invalidates the refresh token stored in the HTTP-only cookie,
     ending the current session. The client is responsible for discarding the access token.""",
-    status_code=status.HTTP_204_NO_CONTENT,
 )
-def logout(response: Response, refresh_token: str = Cookie(include_in_schema=False)):
+def logout(response: APIResponse, refresh_token: str = Cookie(include_in_schema=False)):
     revoke_refresh_token(refresh_token)
     delete_refresh_token_cookie(response)
     response.status_code = status.HTTP_204_NO_CONTENT
@@ -122,12 +124,11 @@ def logout(response: Response, refresh_token: str = Cookie(include_in_schema=Fal
 @router.post(
     "/logout-all",
     summary="Revoke all sessions",
-    description="""Invalidates every refresh token belonging to the user,
+    description="""Invalidates all refresh tokens belonging to the user,
     ending all sessions including the current one. The client is responsible
     for discarding the access token.""",
-    status_code=status.HTTP_204_NO_CONTENT,
 )
-def logout_all_sessions(response: Response, user_id: AuthUserId):
+def logout_all_sessions(response: APIResponse, user_id: AuthUserId):
     revoke_all_user_sessions(user_id=user_id)
     delete_refresh_token_cookie(response)
     response.status_code = status.HTTP_204_NO_CONTENT
@@ -143,7 +144,19 @@ def logout_all_sessions(response: Response, user_id: AuthUserId):
     response_model=AuthResponse,
 )
 def refresh_tokens(refresh_token: str = Cookie(include_in_schema=False)):
-    new_access_token, new_refresh_token = rotate_refresh_token(refresh_token)
-    response = JSONResponse({"token": new_access_token, "type": "Bearer"})
+    try:
+        new_access_token, new_refresh_token = rotate_refresh_token(refresh_token)
+    except InvalidAuthToken:
+        logger.warning("User's refresh token has expired or is invalid.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated.",
+        )
+
+    response = APIResponse(
+        content=AuthResponse(
+            token=new_access_token,
+        ).model_dump()
+    )
     set_refresh_token_cookie(response, refresh_token=new_refresh_token)
     return response
