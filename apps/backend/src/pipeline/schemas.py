@@ -54,13 +54,6 @@ class ConnectionConfig(BaseModel):
     )
 
 
-class SuccessConnection(BaseModel):
-    status: str = Field(default="connected")
-    database: str = Field(
-        description="Database name is set as 'demo' if not specified.",
-    )
-
-
 class ConnectionStatus(BaseModel):
     connected: bool
     database: str | None = Field(
