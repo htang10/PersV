@@ -2,7 +2,7 @@ import hmac
 import secrets
 from datetime import timedelta
 
-from src.auth.exceptions import InvalidCode
+from src.auth.exceptions import InvalidEmailOrOTP
 from src.auth.utils import hash_credential
 from src.core.redis_client import redis_client
 
@@ -29,7 +29,7 @@ def verify_code(email: str, code: str) -> None:
     stored = redis_client.get(f"otp:{email}")
 
     if stored is None or not hmac.compare_digest(hashed_input, stored):
-        raise InvalidCode
+        raise InvalidEmailOrOTP
 
 
 def delete_code(email: str) -> None:

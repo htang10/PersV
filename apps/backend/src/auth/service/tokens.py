@@ -6,7 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 
 from src.auth.config import auth_settings
-from src.auth.exceptions import InvalidToken
+from src.auth.exceptions import InvalidAuthToken
 from src.auth.utils import hash_credential
 from src.core.redis_client import redis_client
 from src.core.utils import get_current_datetime
@@ -91,7 +91,7 @@ def validate_access(credentials: HTTPAuthorizationCredentials | None) -> dict:
             issuer=auth_settings.JWT_ISSUER,
         )
     except JWTError:
-        raise InvalidToken
+        raise InvalidAuthToken
 
     return payload
 
@@ -196,7 +196,7 @@ def rotate_refresh_token(token: str) -> tuple[str, str]:
     key = RefreshTokenKey.for_token(hashed_token)
     user_id = redis_client.get(key)
     if not user_id:
-        raise InvalidToken
+        raise InvalidAuthToken
 
     # invalidate old token immediately
     revoke_refresh_token(token=token)  # avoid double hashing
