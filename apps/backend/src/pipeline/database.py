@@ -173,10 +173,11 @@ class CustomDBConnectionManager:
         except ValidationError:
             return None
 
-    def get_connection_status(self, user_id: str) -> ConnectionStatus:
-        connection = self.get_connection(user_id=user_id)
-        if not connection:
+    def get_connection_status(self, user_id: str | None) -> ConnectionStatus:
+        if not user_id:
             return ConnectionStatus(connected=False)
+
+        connection = self.get_connection(user_id=user_id)
         db = (
             connection.connection_details.db
             if isinstance(connection, CustomPayload)
