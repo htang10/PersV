@@ -22,7 +22,15 @@ def setup_logging(level: int) -> None:
     )
 
     # Suppress verbose HTTP libraries
-    for logger_name in ("httpcore", "httpx", "httpx2", "hpack", "urllib3", "anthropic"):
+    for logger_name in (
+        "httpcore",
+        "httpcore2",
+        "httpx",
+        "httpx2",
+        "hpack",
+        "urllib3",
+        "openai",
+    ):
         logging.getLogger(logger_name).setLevel(max(level, logging.WARNING))
 
     uvicorn_loggers = (
