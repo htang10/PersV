@@ -1,31 +1,45 @@
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field
 
-NormalizedEmail = Annotated[str, BeforeValidator(lambda v: v.strip().lower())]
+NormalizedEmail = Annotated[EmailStr, BeforeValidator(lambda v: v.strip().lower())]
 
 
 class OTPRequest(BaseModel):
-    """Request payload for initiating an OTP (one-time password) flow.
+    """Request payload for initiating OTP authentication.
 
     Attributes:
-        email: The recipient's email address.
-            Automatically stripped of leading/trailing whitespace and lowercased before validation.
+        email: The user's email address.
+            Automatically validated and normalized.
     """
 
-    email: NormalizedEmail
+    email: NormalizedEmail = Field(description="The user's email address.")
+
+
+class OTPResponse(BaseModel):
+    """Response returned after an OTP code is generated and sent.
+
+    Attributes:
+        to: The recipient's email address. Included for confirmation only.
+        expires_in: The number of seconds until the OTP code expires.
+    """
+
+    to: NormalizedEmail = Field(
+        description="The email address to which the OTP code will be sent."
+    )
+    expires_in: int = Field(description="Seconds until the OTP code expires.")
 
 
 class OTPLoginRequest(BaseModel):
-    """Request payload for OTP authentication.
+    """Request payload for completing OTP authentication.
 
     Attributes:
-        email: The recipient's email address.
-            Automatically stripped of leading/trailing whitespace and lowercased before validation.
+        email: The user's email address.
+            Automatically validated and normalized.
         code: The 6-digit one-time password sent to the user's email.
     """
 
-    email: NormalizedEmail
+    email: NormalizedEmail = Field(description="The user's email address.")
     code: str = Field(
         description="The 6-digit one-time password sent to the user's email.",
         pattern=r"^\d{6}$",
@@ -37,14 +51,14 @@ class AuthResponse(BaseModel):
     """Authentication credentials issued by the server.
 
     Attributes:
-        access_token: Short-lived JWT access token used for API authentication.
-        token_type: Authentication scheme used in the Authorization header.
+        token: Short-lived JWT access token used for API authentication.
+        type: Authentication scheme used in the Authorization header.
     """
 
-    access_token: str = Field(
+    token: str = Field(
         description="Short-lived JWT access token used for API authentication."
     )
-    token_type: str = Field(
+    type: str = Field(
         default="Bearer",
         description="Authentication scheme used in the Authorization header.",
     )
