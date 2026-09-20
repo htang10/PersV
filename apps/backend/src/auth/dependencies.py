@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.auth.config import auth_settings
-from src.auth.exceptions import InvalidToken
+from src.auth.exceptions import InvalidAuthToken
 from src.auth.repository import get_user_by_id
 from src.auth.service.identities import (
     generate_anon_id,
@@ -44,15 +44,16 @@ def get_auth_user_id(
         The user's ID.
 
     Raises:
-        401: if no token is provided, or it fails validation.
+        401: if a token was neither provided nor valid.
     """
     try:
         payload = validate_access(credentials)
         return str(payload["sub"])
-    except InvalidToken:
+    except InvalidAuthToken:
         logger.warning("User either used an invalid or expired access token.")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+            detail="Invalid or expired access token.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
 
@@ -72,26 +73,30 @@ def get_active_auth_user_id(
     auth_user = get_user_by_id(auth_user_id, session)
     if not auth_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
+            detail="Inactive user.", status_code=status.HTTP_403_FORBIDDEN
         )
     return auth_user_id
 
 
 def get_optional_auth_user_id(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(optional_bearer)],
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(optional_bearer)
+    ],
 ) -> str | None:
-    """Authenticates a user given their credentials.
+    """Authenticates a user given their credentials, if provided.
 
     Returns:
-        The user's ID.
+        The user's ID, or None if no token was provided at all.
 
-    Returns:
-        None if no token is provided or validation fails.
+    Raises:
+        401: if a token was provided but is invalid or expired.
     """
-    payload = validate_access(credentials)
-    if not payload:
-        return None
-    return str(payload["sub"])
+    if credentials is None:
+        return None  # genuinely no token attempt, proceed as anonymous
+
+    # Authenticate user if credentials were present
+    # If credentials were invalid, error is raised
+    return get_auth_user_id(credentials=credentials)
 
 
 def get_optional_current_user_id(
