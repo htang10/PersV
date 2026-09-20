@@ -1,31 +1,28 @@
 # ruff: noqa: ARG001
 import logging
 
-from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.exception_handlers import http_exception_handler
 from redis import RedisError
-
-from src.auth.exceptions import InvalidToken
 
 logger = logging.getLogger(__name__)
 
 
-async def token_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handles invalid token errors and returns an authentication error response."""
-    assert isinstance(exc, InvalidToken)
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(RedisError)
+    async def redis_exception_handler(request: Request, exc: RedisError) -> Response:
+        logger.error("Redis error on %s %s: %s", request.method, request.url.path, exc)
+        http_exc = HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Redis is temporarily unavailable.",
+        )
+        return await http_exception_handler(request, http_exc)
 
-
-async def redis_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    assert isinstance(exc, RedisError)
-    logger.error("Redis error on %s %s: %s", request.method, request.url.path, exc)
-
-    return JSONResponse(
-        status_code=503,
-        content={"detail": "Redis temporarily unavailable"},
-    )
-
-
-async def unexpected_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handles unexpected exceptions and returns a generic server error response."""
-    return JSONResponse(status_code=500, content={"detail": "Internal server error."})
+    @app.exception_handler(Exception)
+    async def unexpected_error_handler(request: Request, exc: Exception) -> Response:
+        logger.error("Unhandled exception on %s %s", request.method, request.url.path)
+        http_exc = HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {type(exc).__name__}",
+        )
+        return await http_exception_handler(request, http_exc)
