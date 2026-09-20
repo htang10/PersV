@@ -22,7 +22,7 @@ async def query(user_id: OptionalUserId, request: QueryRequest, response: Respon
     if not user_id or not custom_conn_manager.reset_expiry(user_id=user_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Not connected to any database.",
+            detail="No active database connection found.",
         )
 
     try:
