@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 
 from src.auth.dependencies import AUTH_ENGINE
 from src.auth.routers import router as auth_router
@@ -45,9 +47,34 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     DEMO_ENGINE.dispose()
 
 
-app = FastAPI(lifespan=lifespan, default_response_class=APIResponse)
+def generate_unique_op_id(route: APIRoute) -> str:
+    return f"{route.methods} - {route.path}"
+
+
+app = FastAPI(
+    lifespan=lifespan,
+    default_response_class=APIResponse,
+    generate_unique_id_function=generate_unique_op_id,
+)
+
+# CORS
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Routers
 app.add_api_route("/health", endpoint=check_health, tags=["health"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(connection.router, prefix="/pipeline", tags=["pipeline"])
-app.include_router(query.router, prefix="/pipeline", tags=["pipeline"])
+app.include_router(connection.router, prefix="/connection", tags=["connection"])
+app.include_router(query.router, prefix="/connection", tags=["connection"])
+
+# Global exception handlers
 register_exception_handlers(app=app)
