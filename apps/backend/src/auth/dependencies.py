@@ -22,7 +22,9 @@ from src.core.utils import get_sqlalchemy_url
 AUTH_ENGINE = create_engine(
     get_sqlalchemy_url(
         username=auth_settings.PG_AUTH_USER, password=auth_settings.PG_AUTH_PASSWORD
-    )
+    ),
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 required_bearer = HTTPBearer()
 optional_bearer = HTTPBearer(auto_error=False)

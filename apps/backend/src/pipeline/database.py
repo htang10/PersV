@@ -37,7 +37,9 @@ logger = logging.getLogger(__name__)
 DEMO_ENGINE = create_engine(
     get_sqlalchemy_url(
         username=pl_settings.PG_DEMO_USER, password=pl_settings.PG_DEMO_PASSWORD
-    )
+    ),
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 DEMO_AGENT = create_sql_agent(engine=DEMO_ENGINE, schema=pl_settings.PG_DEMO_SCHEMA)
 
