@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/connect/demo",
+    "/demo",
     summary="Connect to the demo dataset",
     description="Connect instantly to the built-in demo database. No credentials required.",
     response_model=ConnectionStatus,
@@ -37,7 +37,7 @@ def connect_demo(user_id: CurrentUserId):
 
 
 @router.post(
-    "/connect/custom",
+    "/custom",
     summary="Connect to a custom database",
     description="Establish a database connection using the provided credentials.",
     response_model=ConnectionStatus,
@@ -59,7 +59,7 @@ def connect(config: ConnectionConfig, user_id: AuthUserId):
 
 
 @router.get(
-    "/is-connected",
+    "/status",
     summary="View connection status",
     description="Identify whether an active database connection is currently established.",
     response_model=ConnectionStatus,
@@ -68,8 +68,8 @@ def is_connected(user_id: OptionalUserId):
     return custom_conn_manager.get_connection_status(user_id=user_id)
 
 
-@router.post(
-    "/disconnect",
+@router.delete(
+    "",
     summary="Disconnect from the database",
     description="Terminate the active database connection and clear the associated session state.",
 )
