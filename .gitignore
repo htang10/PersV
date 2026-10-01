@@ -24,6 +24,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# React Router
+.react-router/
+
 # =================== BACKEND ===================
 # Byte-compiled / optimized / DLL files
 __pycache__/
