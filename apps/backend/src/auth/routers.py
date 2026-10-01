@@ -8,7 +8,13 @@ from src.auth.config import auth_settings
 from src.auth.dependencies import AuthSessionDep, AuthUserId
 from src.auth.exceptions import InvalidAuthToken, InvalidEmailOrOTP, UserNotFound
 from src.auth.repository import create_user, get_user_by_email, update_login_metadata
-from src.auth.schemas import AuthResponse, OTPLoginRequest, OTPRequest, OTPResponse
+from src.auth.schemas import (
+    AuthResponse,
+    OTPLoginRequest,
+    OTPRequest,
+    OTPResponse,
+    SessionValidationResponse,
+)
 from src.auth.service.otp import delete_code, verify_code
 from src.auth.service.tokens import (
     create_access_token,
@@ -18,6 +24,7 @@ from src.auth.service.tokens import (
     revoke_refresh_token,
     rotate_refresh_token,
     set_refresh_token_cookie,
+    validate_refresh_token,
 )
 from src.auth.tasks import send_login_otp_task
 from src.auth.throttles import (
@@ -106,6 +113,21 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
         response, refresh_token=create_refresh_token(user_id=user_id)
     )
     return response
+
+
+@router.get(
+    "/session",
+    summary="Validate the current session",
+    description="""Validates the refresh token stored in the HTTP-only cookie.
+    If invalid or not present, user loses access to protected endpoints.""",
+    response_model=SessionValidationResponse,
+)
+def validate_session(
+    refresh_token: str | None = Cookie(default=None, include_in_schema=False),
+):
+    if refresh_token is None:
+        return SessionValidationResponse(valid=False)
+    return SessionValidationResponse(valid=validate_refresh_token(token=refresh_token))
 
 
 @router.post(
