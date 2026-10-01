@@ -11,15 +11,15 @@ from fastapi.routing import APIRoute
 
 from src.auth.dependencies import AUTH_ENGINE
 from src.auth.routers import router as auth_router
+from src.connection.database import DEMO_ENGINE
+from src.connection.routers import connection, query
+from src.connection.tasks import sweep_stale_connections
 from src.core.config import settings
 from src.core.handlers import register_exception_handlers
 from src.core.health import check_health
 from src.core.log import setup_logging
 from src.core.redis_client import redis_client
 from src.core.responses import APIResponse
-from src.pipeline.database import DEMO_ENGINE
-from src.pipeline.routers import connection, query
-from src.pipeline.tasks import sweep_stale_connections
 
 logger = logging.getLogger(__name__)
 

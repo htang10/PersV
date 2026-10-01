@@ -5,9 +5,9 @@ from src.agent.executor import generate_response
 from src.agent.schemas import QueryResponse
 from src.auth.dependencies import OptionalUserId
 from src.auth.service.identities import is_valid_anon_id, set_anon_id_cookie
-from src.pipeline.database import custom_conn_manager
-from src.pipeline.exceptions import AgentError
-from src.pipeline.schemas import QueryRequest
+from src.connection.database import custom_conn_manager
+from src.connection.exceptions import AgentError
+from src.connection.schemas import QueryRequest
 
 router = APIRouter()
 

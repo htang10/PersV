@@ -6,8 +6,8 @@ from typing import Any
 from openai import BadRequestError
 
 from src.agent.schemas import QueryResponse
-from src.pipeline.database import custom_conn_manager
-from src.pipeline.exceptions import AgentError, ConnectionNotFoundError
+from src.connection.database import custom_conn_manager
+from src.connection.exceptions import AgentError, ConnectionNotFoundError
 
 logger = logging.getLogger(__name__)
 

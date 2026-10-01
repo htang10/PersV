@@ -8,8 +8,8 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 from src.auth.models import AuthBase
+from src.connection.models import DemoBase
 from src.core.utils import get_sqlalchemy_url
-from src.pipeline.models import DemoBase
 
 load_dotenv(f".env.{os.getenv('ENVIRONMENT', 'development')}")
 

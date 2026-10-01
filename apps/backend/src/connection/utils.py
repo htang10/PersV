@@ -2,7 +2,7 @@ from collections import OrderedDict
 from types import MappingProxyType
 from typing import Generic
 
-from src.pipeline.schemas import AgentT, CacheEntry, EngineT
+from src.connection.schemas import AgentT, CacheEntry, EngineT
 
 
 class LRUCache(Generic[EngineT, AgentT]):

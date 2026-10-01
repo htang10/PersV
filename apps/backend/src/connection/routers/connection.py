@@ -6,14 +6,14 @@ from fastapi.routing import APIRouter
 
 from src.auth.dependencies import AuthUserId, CurrentUserId, OptionalUserId
 from src.auth.service.identities import delete_anon_id_cookie
-from src.core.responses import APIResponse
-from src.pipeline.config import pl_settings
-from src.pipeline.database import custom_conn_manager
-from src.pipeline.exceptions import (
+from src.connection.config import pl_settings
+from src.connection.database import custom_conn_manager
+from src.connection.exceptions import (
     ConnectionNotFoundError,
     DBConfigError,
 )
-from src.pipeline.schemas import ConnectionConfig, ConnectionStatus
+from src.connection.schemas import ConnectionConfig, ConnectionStatus
+from src.core.responses import APIResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

@@ -14,11 +14,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from src.agent.builder import create_sql_agent
 from src.auth.service.identities import is_valid_anon_id
-from src.core.redis_client import redis_client
-from src.core.utils import get_current_datetime, get_sqlalchemy_url
-from src.pipeline.config import pl_settings
-from src.pipeline.exceptions import ConnectionNotFoundError, DBConfigError
-from src.pipeline.schemas import (
+from src.connection.config import pl_settings
+from src.connection.exceptions import ConnectionNotFoundError, DBConfigError
+from src.connection.schemas import (
     CacheEntry,
     ConnectionDetails,
     ConnectionPayload,
@@ -30,7 +28,9 @@ from src.pipeline.schemas import (
     DemoPayload,
     connection_adapter,
 )
-from src.pipeline.utils import LRUCache
+from src.connection.utils import LRUCache
+from src.core.redis_client import redis_client
+from src.core.utils import get_current_datetime, get_sqlalchemy_url
 
 logger = logging.getLogger(__name__)
 
