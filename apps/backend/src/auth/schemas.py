@@ -62,3 +62,11 @@ class AuthResponse(BaseModel):
         default="Bearer",
         description="Authentication scheme used in the Authorization header.",
     )
+
+
+class SessionValidationResponse(BaseModel):
+    """Response indicating whether the current authentication session is valid."""
+
+    valid: bool = Field(
+        description="Whether the current authentication session is valid."
+    )
