@@ -96,6 +96,87 @@ def validate_access(credentials: HTTPAuthorizationCredentials | None) -> dict:
     return payload
 
 
+def create_refresh_token(user_id: str) -> str:
+    """Creates a refresh token, an opaque random string, and stores it in Redis."""
+    token = secrets.token_urlsafe(64)
+    hashed_token = hash_credential(credential=token)
+
+    redis_client.setex(
+        RefreshTokenKey.for_token(hashed_token),
+        auth_settings.REFRESH_TOKEN_EXP,
+        user_id,
+    )
+    register_user_session(
+        user_id=user_id,
+        session_id=hashed_token,  # The refresh token also serves as the session identifier.
+    )
+
+    return token
+
+
+def validate_refresh_token(token: str) -> bool:
+    """Checks whether a refresh token is currently valid.
+
+    Args:
+        token: The raw refresh token to validate.
+
+    Returns:
+        True if the token is found, False otherwise.
+    """
+    _, _, user_id = _lookup_refresh_token(token=token)
+    return bool(user_id)
+
+
+def revoke_refresh_token(token: str) -> None:
+    hashed_token, key, user_id = _lookup_refresh_token(token=token)
+    if user_id:
+        redis_client.delete(key)
+        revoke_user_session(
+            user_id=user_id, session_id=hashed_token
+        )  # The refresh token also serves as the session identifier.
+
+
+def rotate_refresh_token(token: str) -> tuple[str, str]:
+    """Rotates a refresh token and issues a new token pair.
+
+    The existing refresh token is revoked before generating a new access
+    token and refresh token.
+
+    Raises:
+        InvalidToken: If the refresh token is invalid or has been revoked.
+    """
+    hashed_token, key, user_id = _lookup_refresh_token(token=token)
+    if not user_id:
+        raise InvalidAuthToken
+
+    # invalidate old token immediately
+    redis_client.delete(key)
+    revoke_user_session(user_id=user_id, session_id=hashed_token)
+
+    # issue new pair
+    new_access = create_access_token(user_id)
+    new_refresh = create_refresh_token(user_id)
+
+    return new_access, new_refresh
+
+
+def _lookup_refresh_token(token: str) -> tuple[str, str, str | None]:
+    """Hashes a refresh token and looks up its associated user id.
+
+    Args:
+        token: The raw refresh token to look up.
+
+    Returns:
+        A 3-tuple of:
+            - The hashed token.
+            - The key derived from the hashed token.
+            - The associated user id, or None if the token is not found.
+    """
+    hashed_token = hash_credential(credential=token)
+    key = RefreshTokenKey.for_token(hashed_token)
+    return hashed_token, key, redis_client.get(key)
+
+
 def register_user_session(user_id: str, session_id: str) -> None:
     session_key = SessionKey.for_user(user_id)
 
@@ -152,60 +233,6 @@ def revoke_all_user_sessions(user_id: str) -> None:
     # Finally delete all of their associated sessions
     pipe.delete(session_key)
     pipe.execute()
-
-
-def create_refresh_token(user_id: str) -> str:
-    """Creates a refresh token, an opaque random string, and stores it in Redis."""
-    token = secrets.token_urlsafe(64)
-    hashed_token = hash_credential(credential=token)
-
-    redis_client.setex(
-        RefreshTokenKey.for_token(hashed_token),
-        auth_settings.REFRESH_TOKEN_EXP,
-        user_id,
-    )
-    register_user_session(
-        user_id=user_id,
-        session_id=hashed_token,  # The refresh token also serves as the session identifier.
-    )
-
-    return token
-
-
-def revoke_refresh_token(token: str) -> None:
-    hashed_token = hash_credential(credential=token)
-    key = RefreshTokenKey.for_token(hashed_token)
-    user_id = redis_client.get(key)
-    if user_id:
-        redis_client.delete(key)
-        revoke_user_session(
-            user_id=user_id, session_id=hashed_token
-        )  # The refresh token also serves as the session identifier.
-
-
-def rotate_refresh_token(token: str) -> tuple[str, str]:
-    """Rotates a refresh token and issues a new token pair.
-
-    The existing refresh token is revoked before generating a new access
-    token and refresh token.
-
-    Raises:
-        InvalidToken: If the refresh token is invalid or has been revoked.
-    """
-    hashed_token = hash_credential(credential=token)
-    key = RefreshTokenKey.for_token(hashed_token)
-    user_id = redis_client.get(key)
-    if not user_id:
-        raise InvalidAuthToken
-
-    # invalidate old token immediately
-    revoke_refresh_token(token=token)  # avoid double hashing
-
-    # issue new pair
-    new_access = create_access_token(user_id)
-    new_refresh = create_refresh_token(user_id)
-
-    return new_access, new_refresh
 
 
 def set_refresh_token_cookie(response: Response, refresh_token: str) -> None:
