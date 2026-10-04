@@ -19,6 +19,7 @@ router = APIRouter()
     response_model=QueryResponse,
 )
 async def query(user_id: OptionalUserId, request: QueryRequest, response: Response):
+    # If successful, reset the connection expiry for user every time they query
     if not user_id or not custom_conn_manager.reset_expiry(user_id=user_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -27,7 +28,9 @@ async def query(user_id: OptionalUserId, request: QueryRequest, response: Respon
 
     try:
         if is_valid_anon_id(user_id):
-            set_anon_id_cookie(response, anon_id=user_id)
+            set_anon_id_cookie(
+                response, anon_id=user_id
+            )  # Also resets expiry for existing valid anonymous session
         return await generate_response(prompt=request.prompt, user_id=user_id)
     except AgentError:
         raise HTTPException(
