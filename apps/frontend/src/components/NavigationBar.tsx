@@ -4,8 +4,6 @@ import { useAuth } from "@/context/AuthContext";
 export function NavigationBar() {
 	const { isAuthenticated } = useAuth();
 
-	console.log("render, isAuthenticated =", isAuthenticated);
-
 	return (
 		<header>
 			<nav>
