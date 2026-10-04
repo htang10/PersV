@@ -1,113 +1,60 @@
 import type {
 	ConnectionConfig,
+	DeleteConnectionData,
 	GetConnectionStatusData,
-	GetConnectionStatusError,
 	GetConnectionStatusResponse,
 	PostConnectionCustomData,
-	PostConnectionCustomError,
 	PostConnectionCustomResponse,
 	PostConnectionDemoData,
-	PostConnectionDemoError,
 	PostConnectionDemoResponse,
+	PostConnectionQueryData,
+	PostConnectionQueryResponse,
 } from "@/client";
-import { API_URL } from "@/config";
-import { APIError } from "./api-error";
+import { fetchAPI } from "./api";
 
-interface APIResponse<T> {
-	data: T;
-	metadata: unknown | null;
-}
-
-export async function connect(): Promise<PostConnectionDemoResponse> {
-	const payload: PostConnectionDemoData = {
-		url: "/connection/demo",
-	};
-	const demoURL = `${API_URL}${payload.url}`;
-	const requestOptions: RequestInit = {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		credentials: "include",
-	};
-
-	let response: Response;
-	try {
-		response = await fetch(demoURL, requestOptions);
-	} catch {
-		throw new APIError(0);
-	}
-
-	if (!response.ok) {
-		const error: PostConnectionDemoError = await response
-			.json()
-			.catch(() => null);
-		throw new APIError(response.status, error?.detail);
-	}
-
-	const success: APIResponse<PostConnectionDemoResponse> =
-		await response.json();
-	return success.data;
+export async function connectDemo(): Promise<PostConnectionDemoResponse> {
+	return await fetchAPI<PostConnectionDemoData, PostConnectionDemoResponse>(
+		"POST",
+		"/connection/demo",
+	);
 }
 
 export async function connectCustom(
 	config: ConnectionConfig,
+	accessToken?: string,
 ): Promise<PostConnectionCustomResponse> {
-	const payload: PostConnectionCustomData = {
-		body: config,
-		url: "/connection/custom",
-	};
-	const customURL = `${API_URL}${payload.url}`;
-	const requestOptions: RequestInit = {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		credentials: "include",
-		body: JSON.stringify(payload.body),
-	};
-
-	let response: Response;
-	try {
-		response = await fetch(customURL, requestOptions);
-	} catch {
-		throw new APIError(0);
-	}
-
-	if (!response.ok) {
-		const error: PostConnectionCustomError = await response
-			.json()
-			.catch(() => null);
-		throw new APIError(response.status, error?.detail);
-	}
-
-	const success: APIResponse<PostConnectionCustomResponse> =
-		await response.json();
-	return success.data;
+	return await fetchAPI<PostConnectionCustomData, PostConnectionCustomResponse>(
+		"POST",
+		"/connection/custom",
+		{
+			body: config,
+			accessToken: accessToken,
+		},
+	);
 }
 
 export async function checkConnStatus(): Promise<GetConnectionStatusResponse> {
-	const payload: GetConnectionStatusData = {
-		url: "/connection/status",
-	};
-	const connStatusURL = `${API_URL}${payload.url}`;
-	const requestOptions: RequestInit = {
-		method: "GET",
-		headers: { "Content-Type": "application/json" },
-		credentials: "include",
-	};
+	return await fetchAPI<GetConnectionStatusData, GetConnectionStatusResponse>(
+		"GET",
+		"/connection/status",
+	);
+}
 
-	let response: Response;
-	try {
-		response = await fetch(connStatusURL, requestOptions);
-	} catch {
-		throw new APIError(0);
-	}
+export async function disconnect(): Promise<void> {
+	// API returns 204 No Content on successful disconnect
+	await fetchAPI<DeleteConnectionData, void>("DELETE", "/connection");
+}
 
-	if (!response.ok) {
-		const error: GetConnectionStatusError = await response
-			.json()
-			.catch(() => null);
-		throw new APIError(response.status, error?.detail);
-	}
-
-	const success: APIResponse<GetConnectionStatusResponse> =
-		await response.json();
-	return success.data;
+export async function query(
+	prompt: string,
+): Promise<PostConnectionQueryResponse> {
+	return await fetchAPI<PostConnectionQueryData, PostConnectionQueryResponse>(
+		"POST",
+		"/connection/query",
+		{
+			body: {
+				prompt: prompt,
+			},
+		},
+	);
 }
