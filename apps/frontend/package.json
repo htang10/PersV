@@ -14,10 +14,13 @@
 		"*.{js,jsx,ts,tsx,mjs,cjs}": "npm run lint"
 	},
 	"dependencies": {
+		"@react-router/fs-routes": "^8.4.0",
 		"@react-router/node": "^8.4.0",
 		"isbot": "^5",
 		"react": "^19.2.8",
-		"react-dom": "^19.2.8"
+		"react-dom": "^19.2.8",
+		"react-markdown": "^10.1.0",
+		"remark-gfm": "^4.0.1"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.29.7",
