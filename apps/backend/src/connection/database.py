@@ -128,10 +128,10 @@ class CustomDBConnectionManager:
     def get_agent(self, user_id: str) -> CompiledStateGraph:
         agent = self.__get_cached_agent(user_id=user_id)
         if not agent:
-            conn = self.get_connection(user_id=user_id)
-            if not conn:  # Not connected
+            connection = self.get_connection(user_id=user_id)
+            if not connection:  # Not connected
                 raise ConnectionNotFoundError
-            if isinstance(conn, DemoPayload):  # Connected to demo
+            if isinstance(connection, DemoPayload):  # Connected to demo
                 # Since Demo cache entry's format is consistent, no lock is needed
                 agent = DEMO_AGENT
                 self.__cache_connection(user_id=user_id, cache_entry=DemoCacheEntry())
@@ -141,7 +141,7 @@ class CustomDBConnectionManager:
                 ):  # Another thread may have populated the cache while we waited.
                     agent = self.__get_cached_agent(user_id)
                     if not agent:
-                        encrypted_url = conn.connection_details.url
+                        encrypted_url = connection.connection_details.url
                         conn_url = self.__decrypt_connection(encrypted=encrypted_url)
 
                         engine = self.__build_engine(url=conn_url)
@@ -180,6 +180,9 @@ class CustomDBConnectionManager:
             return ConnectionStatus(connected=False)
 
         connection = self.get_connection(user_id=user_id)
+        if not connection:
+            return ConnectionStatus(connected=False)
+
         db = (
             connection.connection_details.db
             if isinstance(connection, CustomPayload)
