@@ -6,6 +6,10 @@ import { errorMessage } from "@/errors/error-message";
 import { useNavigateNotice } from "@/hooks/useNavigateNotice";
 import { checkConnStatus, disconnect, query } from "@/services/connection";
 
+export function meta() {
+	return [{ title: "Query database - PersV" }];
+}
+
 export default function QueryPage() {
 	const navigateNotice = useNavigateNotice();
 
@@ -27,7 +31,7 @@ export default function QueryPage() {
 				navigateNotice("/connect", {
 					type: "error",
 					message:
-						"Not connected to any database yet or expired due to inactivity. Please establish a database connection in order to query.",
+						"Not connected to any database yet or session expired due to inactivity. Please establish a database connection in order to query.",
 				});
 
 				return false;

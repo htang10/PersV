@@ -1,5 +1,9 @@
 import { Link } from "react-router";
 
+export function meta() {
+	return [{ title: "Page Not Found - PersV" }];
+}
+
 export default function UnknownPages() {
 	return (
 		<div>
