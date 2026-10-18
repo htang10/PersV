@@ -1,10 +1,12 @@
 import asyncio
 import contextlib
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
@@ -78,3 +80,24 @@ app.include_router(query.router, prefix="/connection", tags=["connection"])
 
 # Global exception handlers
 register_exception_handlers(app=app)
+
+# # Allow deployment environments to override the default worker count
+workers_count = int(os.getenv("WEB_CONCURRENCY", 5))
+if workers_count < 1:
+    raise ValueError("WEB_CONCURRENCY must be at least 1")
+
+if __name__ == "__main__":
+    is_prod: bool = (os.getenv("ENVIRONMENT") == "production")
+    uvicorn.run(
+        "src.main:app",
+        host=settings.SERVER_HOST,
+        port=settings.SERVER_PORT,
+        workers=(workers_count if is_prod else 1), # Disable multiprocessing during development
+        reload=(not is_prod), # Disable server reload on changes when deployed
+        http="httptools",
+        access_log=False,
+        proxy_headers=False,  # No proxy in front, skip Uvicorn's X-Forwarded-* middleware
+        server_header=False,
+        timeout_keep_alive=75,  # Keep idle connections open for at least 75s
+        backlog=4096,
+    )
