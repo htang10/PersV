@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     )
     DEBUG: bool
     RATE_LIMIT_ENABLED: bool
+    SERVER_HOST: str
+    SERVER_PORT: int
 
     PG_HOST: str
     PG_PORT: int
