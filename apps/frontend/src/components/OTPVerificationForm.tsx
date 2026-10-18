@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigateNotice } from "@/hooks/useNavigateNotice";
 import { login, sendOTP } from "@/services/auth";
+import { authTokenStore } from "@/services/token";
 
 interface VerificationFormProps {
 	targetEmail: string;
@@ -13,7 +14,7 @@ export function OTPVerificationForm({
 	onBackToLogin,
 }: VerificationFormProps) {
 	const navigateNotice = useNavigateNotice();
-	const { setAccessToken, setIsAuthenticated } = useAuth();
+	const { setIsAuthenticated } = useAuth();
 
 	const [resendCooldown, setResendCooldown] = useState<number>(0);
 	const [otp, setOTP] = useState<string[]>(Array(6).fill(""));
@@ -108,7 +109,7 @@ export function OTPVerificationForm({
 		const code = otp.join("");
 		try {
 			const response = await login(targetEmail, code);
-			setAccessToken(response.token);
+			authTokenStore.setToken(response.token); // Keep track of user's access token for API requests
 			setIsAuthenticated(true);
 			setOTPError(null);
 			navigateNotice("/connect", {
