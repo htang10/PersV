@@ -1,9 +1,10 @@
 import secrets
 import uuid
 
+import jwt
 from fastapi import Response
 from fastapi.security import HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+from jwt.exceptions import InvalidTokenError
 
 from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidAuthToken
@@ -62,7 +63,9 @@ def create_access_token(user_id: str) -> str:
         "jti": str(uuid.uuid4()),
     }
     return jwt.encode(
-        payload, auth_settings.JWT_SECRET_KEY, auth_settings.JWT_ALGORITHM
+        payload=payload,
+        key=auth_settings.JWT_SECRET_KEY,
+        algorithm=auth_settings.JWT_ALGORITHM,
     )
 
 
@@ -84,13 +87,13 @@ def validate_access(credentials: HTTPAuthorizationCredentials | None) -> dict:
     token = credentials.credentials
     try:
         payload = jwt.decode(
-            token,
-            auth_settings.JWT_SECRET_KEY,
+            jwt=token,
+            key=auth_settings.JWT_SECRET_KEY,
             algorithms=[auth_settings.JWT_ALGORITHM],
             audience=auth_settings.JWT_AUDIENCE,
             issuer=auth_settings.JWT_ISSUER,
         )
-    except JWTError:
+    except InvalidTokenError:
         raise InvalidAuthToken
 
     return payload
