@@ -21,14 +21,12 @@ export async function connectDemo(): Promise<PostConnectionDemoResponse> {
 
 export async function connectCustom(
 	config: ConnectionConfig,
-	accessToken?: string,
 ): Promise<PostConnectionCustomResponse> {
 	return await fetchAPI<PostConnectionCustomData, PostConnectionCustomResponse>(
 		"POST",
 		"/connection/custom",
 		{
 			body: config,
-			accessToken: accessToken,
 		},
 	);
 }
