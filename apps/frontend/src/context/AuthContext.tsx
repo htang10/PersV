@@ -1,8 +1,13 @@
-import { createContext, type ReactNode, useContext, useState } from "react";
+import {
+	createContext,
+	type ReactNode,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
+import { authTokenStore } from "@/services/token";
 
 interface AuthContextValue {
-	accessToken: string | null;
-	setAccessToken: (token: string | null) => void;
 	isAuthenticated: boolean;
 	setIsAuthenticated: (value: boolean) => void;
 }
@@ -10,14 +15,17 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-	const [accessToken, setAccessToken] = useState<string | null>(null);
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+	useEffect(() => {
+		return authTokenStore.registerExpirationHandler(() => {
+			setIsAuthenticated(false);
+		});
+	}, []);
 
 	return (
 		<AuthContext.Provider
 			value={{
-				accessToken,
-				setAccessToken,
 				isAuthenticated,
 				setIsAuthenticated,
 			}}
