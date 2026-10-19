@@ -13,6 +13,6 @@ COPY . .
 
 ENV PATH="/backend/.venv/bin:$PATH"
 
-EXPOSE 8000
+EXPOSE 80
 
-CMD ["sh", "-c", "fastapi run --workers ${WEB_CONCURRENCY:-5}"]
+CMD ["python3", "-m", "src.main"]
