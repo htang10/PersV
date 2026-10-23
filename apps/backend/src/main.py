@@ -70,6 +70,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-New-Access-Token"],
 )
 
 # Routers
@@ -87,13 +88,15 @@ if workers_count < 1:
     raise ValueError("WEB_CONCURRENCY must be at least 1")
 
 if __name__ == "__main__":
-    is_prod: bool = (os.getenv("ENVIRONMENT") == "production")
+    is_prod: bool = os.getenv("ENVIRONMENT") == "production"
     uvicorn.run(
         "src.main:app",
         host=settings.SERVER_HOST,
         port=settings.SERVER_PORT,
-        workers=(workers_count if is_prod else 1), # Disable multiprocessing during development
-        reload=(not is_prod), # Disable server reload on changes when deployed
+        workers=(
+            workers_count if is_prod else 1
+        ),  # Disable multiprocessing during development
+        reload=(not is_prod),  # Disable server reload on changes when deployed
         http="httptools",
         access_log=False,
         proxy_headers=False,  # No proxy in front, skip Uvicorn's X-Forwarded-* middleware
