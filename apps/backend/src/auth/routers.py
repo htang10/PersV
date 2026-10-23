@@ -6,7 +6,7 @@ from fastapi.routing import APIRouter
 
 from src.auth.config import auth_settings
 from src.auth.dependencies import AuthSessionDep, AuthUserId
-from src.auth.exceptions import InvalidAuthToken, InvalidEmailOrOTP, UserNotFound
+from src.auth.exceptions import InvalidEmailOrOTP, UserNotFound
 from src.auth.repository import create_user, get_user_by_email, update_login_metadata
 from src.auth.schemas import (
     AuthResponse,
@@ -22,7 +22,6 @@ from src.auth.service.tokens import (
     delete_refresh_token_cookie,
     revoke_all_user_sessions,
     revoke_refresh_token,
-    rotate_refresh_token,
     set_refresh_token_cookie,
     validate_refresh_token,
 )
@@ -101,7 +100,7 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
 
     # Update user metadata
     ip_address = request.headers.get("X-Forwarded-For", request.client.host)
-    update_login_metadata(user=user, ip_address=ip_address, session=session)
+    update_login_metadata(user=user, ip_address=ip_address, db_session=session)
 
     user_id = str(user.id)
     response = APIResponse(
@@ -154,31 +153,4 @@ def logout_all_sessions(response: APIResponse, user_id: AuthUserId):
     revoke_all_user_sessions(user_id=user_id)
     delete_refresh_token_cookie(response)
     response.status_code = status.HTTP_204_NO_CONTENT
-    return response
-
-
-@router.post(
-    "/refresh",
-    summary="Rotate refresh token and issue new access token",
-    description="""Validates the refresh token stored in the HTTP-only cookie,
-    issues a new access token, and rotates the refresh token.
-    The rotated refresh token is set as an HTTP-only cookie.""",
-    response_model=AuthResponse,
-)
-def refresh_tokens(refresh_token: str = Cookie(include_in_schema=False)):
-    try:
-        new_access_token, new_refresh_token = rotate_refresh_token(refresh_token)
-    except InvalidAuthToken:
-        logger.warning("User's refresh token has expired or is invalid.")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated.",
-        )
-
-    response = APIResponse(
-        content=AuthResponse(
-            token=new_access_token,
-        ).model_dump()
-    )
-    set_refresh_token_cookie(response, refresh_token=new_refresh_token)
     return response
