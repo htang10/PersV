@@ -7,14 +7,18 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.auth.config import auth_settings
-from src.auth.exceptions import InvalidAuthToken
+from src.auth.exceptions import InvalidAccessToken, InvalidRefreshToken
 from src.auth.repository import get_user_by_id
 from src.auth.service.identities import (
     generate_anon_id,
     is_valid_anon_id,
     set_anon_id_cookie,
 )
-from src.auth.service.tokens import validate_access
+from src.auth.service.tokens import (
+    rotate_refresh_token,
+    set_refresh_token_cookie,
+    validate_access,
+)
 from src.auth.throttles import anon_1h_ip, anon_15m_ip
 from src.core.rate_limiter import check_limits, record_hits
 from src.core.utils import get_sqlalchemy_url
@@ -32,96 +36,138 @@ logger = logging.getLogger(__name__)
 
 
 def get_auth_db() -> Generator[Session, Any, None]:
-    """Dependency that yields a database session for authentication."""
-    with Session(AUTH_ENGINE) as session:
-        yield session
+    """Provides a transactional database session for the authentication database.
+
+    Session is automatically closed after the request lifecycle completes.
+
+    Yields:
+        A SQLAlchemy session connected to the authentication database.
+    """
+    with Session(AUTH_ENGINE) as db_session:
+        yield db_session
 
 
-def get_auth_user_id(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(required_bearer)],
+def _authenticate(
+    response: Response,
+    access_token: str | None,
+    refresh_token: str,
+    db_session: Session,
 ) -> str:
-    """Authenticates a user given their credentials.
+    """Validates access token and, if needed, refresh token.
+
+    If access token is either missing or invalid, a full token rotation is performed.
 
     Returns:
-        The user's ID.
+        The user id.
 
     Raises:
-        401: if a token was neither provided nor valid.
+        401: If both tokens are missing or invalid.
+        403: If the user account is inactive.
     """
-    try:
-        payload = validate_access(credentials)
-        return str(payload["sub"])
-    except InvalidAuthToken:
-        logger.warning("User either used an invalid or expired access token.")
-        raise HTTPException(
-            detail="Invalid or expired access token.",
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
+    user_id = None
+    rotation = None
+    if access_token:
+        try:
+            # Check if the primary access token is present and valid
+            user_id = str(validate_access(access_token)["sub"])
+        except InvalidAccessToken:
+            pass
 
+    if user_id is None:
+        try:
+            # Access token expired; attempt token rotation using the refresh token
+            rotation = rotate_refresh_token(token=refresh_token)
+        except InvalidRefreshToken:
+            logger.warning(
+                "User session has expired due to an invalid or missing refresh token."
+            )
+            raise HTTPException(
+                detail="Invalid or expired authentication tokens.",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
 
-def get_active_auth_user_id(
-    auth_user_id: str = Depends(get_auth_user_id),
-    session: Session = Depends(get_auth_db),
-) -> str:
-    """Authenticates a user given their credentials, but also require the user's
-    account to be active.
+        # Validate the newly generated access token and get the user ID
+        user_id = rotation.user_id
 
-    Returns:
-        The user's ID.
-
-    Raises:
-        403: if the user is not active.
-    """
-    auth_user = get_user_by_id(auth_user_id, session)
-    if not auth_user.is_active:
+    if not get_user_by_id(user_id=user_id, db_session=db_session).is_active:
         raise HTTPException(
             detail="Inactive user.", status_code=status.HTTP_403_FORBIDDEN
         )
-    return auth_user_id
+
+    # Persist the new tokens in the response headers and cookies
+    if rotation:
+        new_access_token = rotation.access_token
+        new_refresh_token = rotation.refresh_token
+        if new_access_token and new_refresh_token:
+            set_refresh_token_cookie(response, refresh_token=new_refresh_token)
+            response.headers["X-New-Access-Token"] = new_access_token
+
+    return user_id
+
+
+def get_auth_user_id(
+    response: Response,
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(required_bearer)],
+    refresh_token: str | None = Cookie(default=None, include_in_schema=False),
+    db_session: Session = Depends(get_auth_db),
+) -> str:
+    """Authenticates the user and requires a valid session.
+
+    Returns:
+        The user id.
+
+    Raises:
+        401: If credentials were missing or invalid.
+        403: If the user account is inactive.
+    """
+    if not refresh_token:
+        logger.warning(
+            "User session has expired due to an invalid or missing refresh token."
+        )
+        raise HTTPException(
+            detail="Invalid or expired authentication tokens.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+    access_token = credentials.credentials if credentials else None
+    return _authenticate(response, access_token, refresh_token, db_session)
 
 
 def get_optional_auth_user_id(
+    response: Response,
     credentials: Annotated[
         HTTPAuthorizationCredentials | None, Depends(optional_bearer)
     ],
+    refresh_token: str | None = Cookie(default=None, include_in_schema=False),
+    session: Session = Depends(get_auth_db),
 ) -> str | None:
-    """Authenticates a user given their credentials, if provided.
+    """Authenticates the user if signed in, otherwise treats them as a guest.
 
     Returns:
-        The user's ID, or None if no token was provided at all.
+        The user id, or None if the user is a guest.
 
     Raises:
-        401: if a token was provided but is invalid or expired.
+        401: If credentials were missing or invalid.
+        403: If the user account is inactive.
     """
-    if credentials is None:
-        return None  # genuinely no token attempt, proceed as anonymous
-
-    # Authenticate user if credentials were present
-    # If credentials were invalid, error is raised
-    return get_auth_user_id(credentials=credentials)
+    if not refresh_token:
+        return None  # Guest, regardless of any access token
+    access_token = credentials.credentials if credentials else None
+    return _authenticate(response, access_token, refresh_token, session)
 
 
 def get_optional_current_user_id(
     user_id: str | None = Depends(get_optional_auth_user_id),
     anon_id: str | None = Cookie(default=None, include_in_schema=False),
 ) -> str | None:
-    """Detects whether the current user is a guest/anonymous or an authenticated user.
+    """Identifies whether the current user is a guest/anonymous user or an authenticated user.
 
     Returns:
-        The user's id.
-        None if the user is not found/recognized.
+        The user id. None if not found/recognized.
     """
-    if user_id:
-        with Session(AUTH_ENGINE) as session:
-            return get_active_auth_user_id(
-                auth_user_id=user_id,
-                session=session,
-            )
-
     if anon_id and is_valid_anon_id(anon_id):
         return anon_id
 
-    return None
+    return user_id
 
 
 def get_current_user_id(
@@ -130,12 +176,12 @@ def get_current_user_id(
     user_id: str | None = Depends(get_optional_auth_user_id),
     anon_id: str | None = Cookie(default=None, include_in_schema=False),
 ) -> str:
-    """Detects whether the current user is a guest/anonymous or an authenticated user.
+    """Identifies whether the current user is a guest/anonymous user or an authenticated user.
 
-    If not yet recognized, generates a new anonymous ID for the current user.
+    If not yet recognized/registered, generates a new anonymous ID for the current user.
 
     Returns:
-        The user's id, or a newly generated anonymous ID.
+        The user id, or a newly generated anonymous ID.
     """
     current_user_id = get_optional_current_user_id(
         user_id=user_id,
@@ -158,7 +204,7 @@ def get_current_user_id(
 
 
 AuthSessionDep = Annotated[Session, Depends(get_auth_db)]  # Login
-AuthUserId = Annotated[str, Depends(get_active_auth_user_id)]  # Custom connect
+AuthUserId = Annotated[str, Depends(get_auth_user_id)]  # Custom connect
 OptionalUserId = Annotated[
     str | None, Depends(get_optional_current_user_id)
 ]  # Connection check, Disconnect, Querying
