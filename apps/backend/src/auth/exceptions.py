@@ -6,5 +6,9 @@ class UserNotFound(Exception):
     pass
 
 
-class InvalidAuthToken(Exception):
+class InvalidAccessToken(Exception):
+    pass
+
+
+class InvalidRefreshToken(Exception):
     pass
