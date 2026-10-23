@@ -46,6 +46,7 @@ select = [
 ignore = [
     "ANN401",
     "SIM108",
+    "SIM105",
 ]
 
 [tool.ruff.format]
