@@ -1,6 +1,5 @@
 import { API_URL } from "@/config";
 import { APIError, MalformedJSON } from "@/errors/error-type";
-import { rotateTokens } from "@/services/auth";
 import { authTokenStore } from "@/services/token";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -13,22 +12,9 @@ interface APIResponse<TResponse> {
 	metadata: unknown | null;
 }
 
-const MAX_RETRIES = 1;
-
 export async function fetchAPI<TRequest extends { url: string }, TResponse>(
 	method: HttpMethod,
 	path: TRequest["url"],
-	...args: TRequest extends { body: unknown }
-		? [options: RequestOptions<TRequest>]
-		: [options?: RequestOptions<TRequest>]
-): Promise<TResponse> {
-	return fetchAPIWithRetry<TRequest, TResponse>(method, path, 0, ...args);
-}
-
-async function fetchAPIWithRetry<TRequest extends { url: string }, TResponse>(
-	method: HttpMethod,
-	path: TRequest["url"],
-	retries: number,
 	...args: TRequest extends { body: unknown }
 		? [options: RequestOptions<TRequest>]
 		: [options?: RequestOptions<TRequest>]
@@ -51,33 +37,15 @@ async function fetchAPIWithRetry<TRequest extends { url: string }, TResponse>(
 			body: payload,
 			credentials: "include",
 		});
+		const newAccessToken = response.headers.get("X-New-Access-Token");
+		if (newAccessToken) {
+			authTokenStore.setToken(newAccessToken);
+		}
 	} catch {
 		throw new APIError(0); // Usually network error
 	}
 
 	if (!response.ok) {
-		if (response.status === 401) {
-			// Unauthorized request
-			if (accessToken && retries < MAX_RETRIES) {
-				/*
-				 * Perform token rotation if user's token exists but expired
-				 * AND maximum retry attempts haven't been reached yet
-				 */
-				try {
-					const payload = await rotateTokens();
-					authTokenStore.setToken(payload.token);
-					return fetchAPIWithRetry<TRequest, TResponse>(
-						method,
-						path,
-						retries + 1,
-						...args,
-					); // Retry with new access token
-				} catch {
-					// Both access and refresh tokens expired
-					authTokenStore.expireSession();
-				}
-			}
-		}
 		const error: unknown = await response.json().catch(() => null);
 		const detail =
 			typeof error === "object" && error !== null && "detail" in error
