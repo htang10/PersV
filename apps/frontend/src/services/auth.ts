@@ -5,9 +5,7 @@ import type {
 	PostAuthLoginResponse,
 	PostAuthLogoutData,
 	PostAuthOtpData,
-	PostAuthOtpResponse,
-	PostAuthRefreshData,
-	PostAuthRefreshResponse,
+	PostAuthOtpResponse
 } from "@/client";
 import { fetchAPI } from "./api";
 
@@ -48,11 +46,4 @@ export async function validateCurrentSession(): Promise<GetAuthSessionResponse> 
 
 export async function logout(): Promise<void> {
 	return await fetchAPI<PostAuthLogoutData, void>("POST", "/auth/logout");
-}
-
-export async function rotateTokens(): Promise<PostAuthRefreshResponse> {
-	return await fetchAPI<PostAuthRefreshData, PostAuthRefreshResponse>(
-		"POST",
-		"/auth/refresh",
-	);
 }
