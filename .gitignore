@@ -26,6 +26,7 @@ dist-ssr
 
 # React Router
 .react-router/
+.build/
 
 # =================== BACKEND ===================
 # Byte-compiled / optimized / DLL files
