@@ -4,27 +4,27 @@ import { useLocationNotice } from "@/hooks/useLocationNotice";
 import type { NoticeData } from "@/types/notice";
 
 export function Notice() {
-	const navigate = useNavigate();
-	const locationNotice = useLocationNotice();
-	const [notice, _setNotice] = useState<NoticeData | null>(
-		/*
+  const navigate = useNavigate();
+  const locationNotice = useLocationNotice();
+  const [notice, _setNotice] = useState<NoticeData | null>(
+    /*
         Message passed via location.state: disconnect confirmation, missing-connection warning, or a failed connection attempt. Falls back to null if none.
         */
-		locationNotice ?? null,
-	);
+    locationNotice ?? null,
+  );
 
-	useEffect(() => {
-		if (locationNotice) {
-			// Clear the message from the location state after displaying it once
-			navigate(location.pathname, { replace: true, state: {} });
-		}
-	}, [navigate, locationNotice]);
+  useEffect(() => {
+    if (locationNotice) {
+      // Clear the message from the location state after displaying it once
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [navigate, locationNotice]);
 
-	return (
-		notice && (
-			<p id="notice" className={`${notice.type}-notice`}>
-				{notice.message}
-			</p>
-		)
-	);
+  return (
+    notice && (
+      <p id="notice" className={`${notice.type}-notice`}>
+        {notice.message}
+      </p>
+    )
+  );
 }

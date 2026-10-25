@@ -2,24 +2,24 @@ let accessToken: string | null = null;
 let onSessionExpired: (() => void) | null = null;
 
 export const authTokenStore = {
-	getToken: () => accessToken,
+  getToken: () => accessToken,
 
-	setToken: (token: string | null) => {
-		accessToken = token;
-	},
+  setToken: (token: string | null) => {
+    accessToken = token;
+  },
 
-	registerExpirationHandler: (handler: () => void) => {
-		onSessionExpired = handler;
+  registerExpirationHandler: (handler: () => void) => {
+    onSessionExpired = handler;
 
-		return () => {
-			if (onSessionExpired === handler) {
-				onSessionExpired = null;
-			}
-		};
-	},
+    return () => {
+      if (onSessionExpired === handler) {
+        onSessionExpired = null;
+      }
+    };
+  },
 
-	expireSession: () => {
-		accessToken = null;
-		onSessionExpired?.();
-	},
+  expireSession: () => {
+    accessToken = null;
+    onSessionExpired?.();
+  },
 };
