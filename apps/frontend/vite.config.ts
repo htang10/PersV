@@ -1,11 +1,16 @@
 import { reactRouter } from "@react-router/dev/vite";
-import babel from "@rolldown/plugin-babel";
-import { reactCompilerPreset } from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig, lazyPlugins } from "vite-plus";
 
 export default defineConfig({
-	plugins: [reactRouter(), babel({ presets: [reactCompilerPreset()] })],
-	resolve: {
-		tsconfigPaths: true,
-	},
+  fmt: {},
+  lint: {
+    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
+    rules: { "vite-plus/prefer-vite-plus-imports": "error" },
+    options: { typeAware: true, typeCheck: true },
+  },
+  plugins: lazyPlugins(() => [tailwindcss(), reactRouter()]),
+  resolve: {
+    tsconfigPaths: true,
+  },
 });
