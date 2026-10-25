@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteConnectionData, DeleteConnectionErrors, DeleteConnectionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetConnectionStatusData, GetConnectionStatusErrors, GetConnectionStatusResponses, GetHealthData, GetHealthResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutAllData, PostAuthLogoutAllResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthOtpData, PostAuthOtpErrors, PostAuthOtpResponses, PostAuthRefreshData, PostAuthRefreshErrors, PostAuthRefreshResponses, PostConnectionCustomData, PostConnectionCustomErrors, PostConnectionCustomResponses, PostConnectionDemoData, PostConnectionDemoErrors, PostConnectionDemoResponses, PostConnectionQueryData, PostConnectionQueryErrors, PostConnectionQueryResponses } from './types.gen';
+import type { DeleteConnectionData, DeleteConnectionErrors, DeleteConnectionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetConnectionStatusData, GetConnectionStatusErrors, GetConnectionStatusResponses, GetHealthData, GetHealthResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutAllData, PostAuthLogoutAllErrors, PostAuthLogoutAllResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthOtpData, PostAuthOtpErrors, PostAuthOtpResponses, PostConnectionCustomData, PostConnectionCustomErrors, PostConnectionCustomResponses, PostConnectionDemoData, PostConnectionDemoErrors, PostConnectionDemoResponses, PostConnectionQueryData, PostConnectionQueryErrors, PostConnectionQueryResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -77,20 +77,11 @@ export const _post_AuthLogout = <ThrowOnError extends boolean = false>(options?:
  * ending all sessions including the current one. The client is responsible
  * for discarding the access token.
  */
-export const _post_AuthLogoutAll = <ThrowOnError extends boolean = false>(options?: Options<PostAuthLogoutAllData, ThrowOnError>) => (options?.client ?? client).post<PostAuthLogoutAllResponses, unknown, ThrowOnError>({
+export const _post_AuthLogoutAll = <ThrowOnError extends boolean = false>(options?: Options<PostAuthLogoutAllData, ThrowOnError>) => (options?.client ?? client).post<PostAuthLogoutAllResponses, PostAuthLogoutAllErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/auth/logout-all',
     ...options
 });
-
-/**
- * Rotate refresh token and issue new access token
- *
- * Validates the refresh token stored in the HTTP-only cookie,
- * issues a new access token, and rotates the refresh token.
- * The rotated refresh token is set as an HTTP-only cookie.
- */
-export const _post_AuthRefresh = <ThrowOnError extends boolean = false>(options?: Options<PostAuthRefreshData, ThrowOnError>) => (options?.client ?? client).post<PostAuthRefreshResponses, PostAuthRefreshErrors, ThrowOnError>({ url: '/auth/refresh', ...options });
 
 /**
  * Connect to the demo dataset

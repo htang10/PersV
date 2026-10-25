@@ -385,37 +385,21 @@ export type PostAuthLogoutAllData = {
     url: '/auth/logout-all';
 };
 
-export type PostAuthLogoutAllResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type PostAuthRefreshData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/auth/refresh';
-};
-
-export type PostAuthRefreshErrors = {
+export type PostAuthLogoutAllErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type PostAuthRefreshError = PostAuthRefreshErrors[keyof PostAuthRefreshErrors];
+export type PostAuthLogoutAllError = PostAuthLogoutAllErrors[keyof PostAuthLogoutAllErrors];
 
-export type PostAuthRefreshResponses = {
+export type PostAuthLogoutAllResponses = {
     /**
      * Successful Response
      */
-    200: AuthResponse;
+    200: unknown;
 };
-
-export type PostAuthRefreshResponse = PostAuthRefreshResponses[keyof PostAuthRefreshResponses];
 
 export type PostConnectionDemoData = {
     body?: never;
