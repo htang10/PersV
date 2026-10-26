@@ -48,7 +48,7 @@ export default function QueryPage() {
   };
 
   useEffect(() => {
-    checkConnection();
+    void checkConnection();
   }, []);
 
   // Don't render the query page until the connection check completes
@@ -91,7 +91,9 @@ export default function QueryPage() {
 
   return (
     <div>
-      {(connectedDB && <span>Connected to {connectedDB}</span>) || (
+      {connectedDB ? (
+        <span>Connected to {connectedDB}</span>
+      ) : (
         <span>Not connected to any database</span>
       )}
       <form onSubmit={handleQuery} onReset={handleDisconnect}>

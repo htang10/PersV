@@ -7,7 +7,6 @@ type RequestOptions<TRequest> = TRequest extends { body: infer B } ? { body: B }
 
 interface APIResponse<TResponse> {
   data: TResponse;
-  metadata: unknown | null;
 }
 
 export async function fetchAPI<TRequest extends { url: string }, TResponse>(

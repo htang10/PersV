@@ -14,7 +14,7 @@ export default function Login() {
   // Don't render login page if user is already logged in. Redirect to connect page
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/connect");
+      void navigate("/connect");
     }
   }, [isAuthenticated, navigate]);
 

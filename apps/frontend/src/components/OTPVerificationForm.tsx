@@ -31,7 +31,7 @@ export function OTPVerificationForm({ targetEmail, onBackToLogin }: Verification
     startResendCooldown();
 
     return () => {
-      cooldownID.current && clearInterval(cooldownID.current);
+      resetResendCooldown();
     };
   }, []);
 
@@ -40,12 +40,19 @@ export function OTPVerificationForm({ targetEmail, onBackToLogin }: Verification
     cooldownID.current = setInterval(() => {
       setResendCooldown((cooldown) => {
         if (cooldown <= 1) {
-          cooldownID.current && clearInterval(cooldownID.current);
+          resetResendCooldown();
           return 0;
         }
         return cooldown - 1;
       });
     }, 1000);
+  };
+
+  const resetResendCooldown = () => {
+    if (cooldownID.current !== null) {
+      clearInterval(cooldownID.current);
+      cooldownID.current = null;
+    }
   };
 
   const updateOTPDigit = (inputDigit: string, position: number) => {
@@ -110,7 +117,7 @@ export function OTPVerificationForm({ targetEmail, onBackToLogin }: Verification
         type: "info",
         message: "Logged in successfully.",
       });
-    } catch (_error) {
+    } catch {
       setOTPError("Invallid or expired code");
       clearOTPInputs();
       inputRefs.current[0]?.focus();
@@ -123,7 +130,7 @@ export function OTPVerificationForm({ targetEmail, onBackToLogin }: Verification
   };
 
   const handleEmailChange = async () => {
-    cooldownID.current && clearInterval(cooldownID.current);
+    resetResendCooldown();
     setResendCooldown(0);
     clearOTPInputs();
     onBackToLogin();

@@ -5,7 +5,7 @@ export function useNavigateNotice() {
   const navigate = useNavigate();
 
   return (path: string, notice: NoticeData) => {
-    navigate(path, {
+    void navigate(path, {
       state: { notice },
     });
   };

@@ -8,17 +8,18 @@ export function Notice() {
   const locationNotice = useLocationNotice();
   const [notice, _setNotice] = useState<NoticeData | null>(
     /*
-        Message passed via location.state: disconnect confirmation, missing-connection warning, or a failed connection attempt. Falls back to null if none.
-        */
+     * Message passed via location.state: disconnect confirmation, missing-connection warning,
+     * or a failed connection attempt. Falls back to null if none.
+     */
     locationNotice ?? null,
   );
 
   useEffect(() => {
     if (locationNotice) {
-      // Clear the message from the location state after displaying it once
-      navigate(location.pathname, { replace: true, state: {} });
+      // Clear the notice message after displaying it once
+      void navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [navigate, locationNotice]);
+  }, []);
 
   return (
     notice && (
