@@ -30,7 +30,7 @@ class DBMS(StrEnum):
 class ConnectionConfig(BaseModel):
     """Database connection parameters provided by the user."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     dbms: DBMS = Field(
         default=DBMS.POSTGRESQL,
         description="The database management system hosting the target database. Defaults to PostgreSQL.",
