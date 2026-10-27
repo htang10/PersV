@@ -1,8 +1,6 @@
-from typing import Annotated
+from pydantic import BaseModel, Field
 
-from pydantic import BaseModel, BeforeValidator, EmailStr, Field
-
-NormalizedEmail = Annotated[EmailStr, BeforeValidator(lambda v: v.strip().lower())]
+from src.core.types import NormalizedEmail
 
 
 class OTPRequest(BaseModel):
