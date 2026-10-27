@@ -1,4 +1,3 @@
-# ruff: noqa: ANN201
 import logging
 
 from fastapi import Cookie, HTTPException, Request, status

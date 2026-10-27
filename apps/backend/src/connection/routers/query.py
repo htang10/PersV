@@ -1,4 +1,3 @@
-# ruff: noqa: ANN201
 from fastapi import APIRouter, HTTPException, Response, status
 
 from src.agent.executor import generate_response
