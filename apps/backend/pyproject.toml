@@ -49,5 +49,9 @@ ignore = [
     "SIM105",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"**/routers.py" = ["ANN201"]
+"**/routers/**" = ["ANN201"]
+
 [tool.ruff.format]
 quote-style="double"
