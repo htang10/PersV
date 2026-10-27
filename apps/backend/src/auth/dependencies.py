@@ -23,6 +23,13 @@ from src.auth.throttles import anon_1h_ip, anon_15m_ip
 from src.core.rate_limiter import check_limits, record_hits
 from src.core.utils import get_sqlalchemy_url
 
+__all__ = [
+    "AuthSessionDep",  # Login
+    "AuthUserId",  # Custom connect, Profile
+    "OptionalUserId",  # Connection check, Disconnect, Querying
+    "CurrentUserId",  # Demo connect
+]
+
 AUTH_ENGINE = create_engine(
     get_sqlalchemy_url(
         username=auth_settings.PG_AUTH_USER, password=auth_settings.PG_AUTH_PASSWORD
@@ -203,9 +210,7 @@ def get_current_user_id(
     return new_anon_id
 
 
-AuthSessionDep = Annotated[Session, Depends(get_auth_db)]  # Login
-AuthUserId = Annotated[str, Depends(get_auth_user_id)]  # Custom connect
-OptionalUserId = Annotated[
-    str | None, Depends(get_optional_current_user_id)
-]  # Connection check, Disconnect, Querying
-CurrentUserId = Annotated[str, Depends(get_current_user_id)]  # Demo connect
+AuthSessionDep = Annotated[Session, Depends(get_auth_db)]
+AuthUserId = Annotated[str, Depends(get_auth_user_id)]
+OptionalUserId = Annotated[str | None, Depends(get_optional_current_user_id)]
+CurrentUserId = Annotated[str, Depends(get_current_user_id)]
