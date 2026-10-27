@@ -22,6 +22,7 @@ from src.core.health import check_health
 from src.core.log import setup_logging
 from src.core.redis_client import redis_client
 from src.core.responses import APIResponse
+from src.profile.routers import router as profile_router
 
 logger = logging.getLogger(__name__)
 
@@ -75,9 +76,10 @@ app.add_middleware(
 
 # Routers
 app.add_api_route("/health", endpoint=check_health, tags=["health"])
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(connection.router, prefix="/connection", tags=["connection"])
 app.include_router(query.router, prefix="/connection", tags=["connection"])
+app.include_router(profile_router, prefix="/users", tags=["profile"])
 
 # Global exception handlers
 register_exception_handlers(app=app)
