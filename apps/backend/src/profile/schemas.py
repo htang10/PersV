@@ -31,9 +31,10 @@ class UserProfileUpdate(BaseModel):
 
 
 class ProfileChangesResponse(BaseModel):
-    updated_email: str | None = Field(
-        default=None, description="Updated email address after reformatting."
-    )
-    updated_display_name: str | None = Field(
-        default=None, description="Updated display name after reformatting."
+    model_config = ConfigDict(populate_by_name=True)
+
+    display_name: str | None = Field(
+        alias="updated_display_name",
+        default=None,
+        description="Updated display name after reformatting.",
     )
