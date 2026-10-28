@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 
 def update_user(
     user_id: str, updated_info: UserProfileUpdate, db_session: Session
-) -> None | dict:
+) -> None | User:
     """Updates user's profile with the provided information.
 
     Fields with null values (None) will not be updated.
 
     Returns:
-        A list of all updated fields
+        The user object with updated values
 
     Raises:
         UserNotFound: User with given id was not found.
@@ -32,13 +32,13 @@ def update_user(
         return None
 
     try:
-        updated_users = db_session.execute(
+        updated_user = db_session.execute(
             update(User).where(User.id == user_id).values(**changes).returning(User)
         ).scalar_one()
-        if not updated_users:
+        if not updated_user:
             raise UserNotFound
         db_session.commit()
-        return changes
+        return updated_user
     except NoResultFound as e:
         logger.warning(e)
         raise UserNotFound
