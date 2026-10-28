@@ -1,2 +1,0 @@
-class EmailAlreadyUsed(Exception):
-    pass
