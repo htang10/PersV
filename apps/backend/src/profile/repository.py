@@ -1,12 +1,11 @@
 import logging
 
 from sqlalchemy import update
-from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
 from src.auth.exceptions import UserNotFound
 from src.auth.models import User
-from src.profile.exceptions import EmailAlreadyUsed
 from src.profile.schemas import UserProfileUpdate
 
 logger = logging.getLogger(__name__)
@@ -42,6 +41,3 @@ def update_user(
     except NoResultFound as e:
         logger.warning(e)
         raise UserNotFound
-    except IntegrityError as e:
-        logger.warning(e)
-        raise EmailAlreadyUsed
