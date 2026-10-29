@@ -9,10 +9,11 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-    DEBUG: bool
-    RATE_LIMIT_ENABLED: bool
+    DEBUG: bool = False
     SERVER_HOST: str
     SERVER_PORT: int
+
+    PG_DEMO_SCHEMA: str = "demo"
 
     PG_HOST: str
     PG_PORT: int
@@ -24,8 +25,6 @@ class Settings(BaseSettings):
     PG_DEMO_PASSWORD: str
     PG_AUTH_USER: str
     PG_AUTH_PASSWORD: str
-
-    PG_DEMO_SCHEMA: str
 
     REDIS_HOST: str
     REDIS_PORT: int

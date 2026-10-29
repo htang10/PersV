@@ -6,12 +6,12 @@ from src.core.config import Settings
 class PipelineSettings(Settings):
     ENCRYPTION_KEY: str
 
-    AUTH_CONN_EXP: timedelta
-    ANON_CONN_EXP: timedelta
+    CACHE_CAPACITY: int = 100
+    CLEANUP_PERIOD: timedelta = timedelta(minutes=30)
+    CLEANUP_THRESHOLD: float = 0.3
 
-    CACHE_CAPACITY: int
-    CLEANUP_PERIOD: timedelta
-    CLEANUP_THRESHOLD: float
+    AUTH_CONN_EXP: timedelta = timedelta(minutes=15)
+    ANON_CONN_EXP: timedelta = timedelta(minutes=30)
 
 
 pl_settings = PipelineSettings()  # type: ignore
