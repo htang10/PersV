@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteConnectionData, DeleteConnectionErrors, DeleteConnectionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetConnectionStatusData, GetConnectionStatusErrors, GetConnectionStatusResponses, GetHealthData, GetHealthResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutAllData, PostAuthLogoutAllErrors, PostAuthLogoutAllResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthOtpData, PostAuthOtpErrors, PostAuthOtpResponses, PostConnectionCustomData, PostConnectionCustomErrors, PostConnectionCustomResponses, PostConnectionDemoData, PostConnectionDemoErrors, PostConnectionDemoResponses, PostConnectionQueryData, PostConnectionQueryErrors, PostConnectionQueryResponses } from './types.gen';
+import type { DeleteConnectionData, DeleteConnectionErrors, DeleteConnectionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetConnectionStatusData, GetConnectionStatusErrors, GetConnectionStatusResponses, GetHealthData, GetHealthResponses, GetUsersMeData, GetUsersMeErrors, GetUsersMeResponses, PatchUsersMeData, PatchUsersMeErrors, PatchUsersMeResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutAllData, PostAuthLogoutAllErrors, PostAuthLogoutAllResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthOtpData, PostAuthOtpErrors, PostAuthOtpResponses, PostConnectionCustomData, PostConnectionCustomErrors, PostConnectionCustomResponses, PostConnectionDemoData, PostConnectionDemoErrors, PostConnectionDemoResponses, PostConnectionQueryData, PostConnectionQueryErrors, PostConnectionQueryResponses, PutAuthEmailData, PutAuthEmailErrors, PutAuthEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -84,6 +84,21 @@ export const _post_AuthLogoutAll = <ThrowOnError extends boolean = false>(option
 });
 
 /**
+ * Update the email address
+ *
+ * Updates the email address of the user.
+ */
+export const _put_AuthEmail = <ThrowOnError extends boolean = false>(options: Options<PutAuthEmailData, ThrowOnError>): RequestResult<PutAuthEmailResponses, PutAuthEmailErrors, ThrowOnError> => (options.client ?? client).put<PutAuthEmailResponses, PutAuthEmailErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/auth/email',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Connect to the demo dataset
  *
  * Connect instantly to the built-in demo database. No credentials required.
@@ -139,6 +154,28 @@ export const _delete_Connection = <ThrowOnError extends boolean = false>(options
 export const _post_ConnectionQuery = <ThrowOnError extends boolean = false>(options: Options<PostConnectionQueryData, ThrowOnError>): RequestResult<PostConnectionQueryResponses, PostConnectionQueryErrors, ThrowOnError> => (options.client ?? client).post<PostConnectionQueryResponses, PostConnectionQueryErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/connection/query',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read Profile
+ */
+export const _get_UsersMe = <ThrowOnError extends boolean = false>(options?: Options<GetUsersMeData, ThrowOnError>): RequestResult<GetUsersMeResponses, GetUsersMeErrors, ThrowOnError> => (options?.client ?? client).get<GetUsersMeResponses, GetUsersMeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/me',
+    ...options
+});
+
+/**
+ * Update Profile
+ */
+export const _patch_UsersMe = <ThrowOnError extends boolean = false>(options: Options<PatchUsersMeData, ThrowOnError>): RequestResult<PatchUsersMeResponses, PatchUsersMeErrors, ThrowOnError> => (options.client ?? client).patch<PatchUsersMeResponses, PatchUsersMeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/me',
     ...options,
     headers: {
         'Content-Type': 'application/json',

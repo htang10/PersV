@@ -189,6 +189,18 @@ export type OtpResponse = {
 };
 
 /**
+ * ProfileChangesResponse
+ */
+export type ProfileChangesResponse = {
+    /**
+     * Updated Display Name
+     *
+     * Updated display name after reformatting.
+     */
+    updated_display_name?: string | null;
+};
+
+/**
  * QueryRequest
  */
 export type QueryRequest = {
@@ -234,6 +246,48 @@ export type SessionValidationResponse = {
      * Whether the current authentication session is valid.
      */
     valid: boolean;
+};
+
+/**
+ * UserProfile
+ */
+export type UserProfile = {
+    /**
+     * Email
+     *
+     * The email address that the user registered with.
+     */
+    email: string;
+    /**
+     * Display Name
+     *
+     * The display name that the user set.
+     */
+    display_name: string;
+    /**
+     * Created At
+     *
+     * The datetime that user created their account.
+     */
+    created_at: string;
+};
+
+/**
+ * UserProfileUpdate
+ */
+export type UserProfileUpdate = {
+    /**
+     * New Email
+     *
+     * New email address.
+     */
+    new_email?: string | null;
+    /**
+     * New Display Name
+     *
+     * New display name. Length restrictions must be met.
+     */
+    new_display_name?: string | null;
 };
 
 /**
@@ -401,6 +455,29 @@ export type PostAuthLogoutAllResponses = {
     200: unknown;
 };
 
+export type PutAuthEmailData = {
+    body: OtpLoginRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/email';
+};
+
+export type PutAuthEmailErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PutAuthEmailError = PutAuthEmailErrors[keyof PutAuthEmailErrors];
+
+export type PutAuthEmailResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type PostConnectionDemoData = {
     body?: never;
     path?: never;
@@ -523,3 +600,53 @@ export type PostConnectionQueryResponses = {
 };
 
 export type PostConnectionQueryResponse = PostConnectionQueryResponses[keyof PostConnectionQueryResponses];
+
+export type GetUsersMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/users/me';
+};
+
+export type GetUsersMeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetUsersMeError = GetUsersMeErrors[keyof GetUsersMeErrors];
+
+export type GetUsersMeResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserProfile;
+};
+
+export type GetUsersMeResponse = GetUsersMeResponses[keyof GetUsersMeResponses];
+
+export type PatchUsersMeData = {
+    body: UserProfileUpdate;
+    path?: never;
+    query?: never;
+    url: '/users/me';
+};
+
+export type PatchUsersMeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PatchUsersMeError = PatchUsersMeErrors[keyof PatchUsersMeErrors];
+
+export type PatchUsersMeResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProfileChangesResponse;
+};
+
+export type PatchUsersMeResponse = PatchUsersMeResponses[keyof PatchUsersMeResponses];
