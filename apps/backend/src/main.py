@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
+from src.auth.config import auth_settings
 from src.auth.dependencies import AUTH_ENGINE
 from src.auth.routers import router as auth_router
 from src.connection.database import DEMO_ENGINE
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     setup_logging(10 if settings.DEBUG else 20)
+
     if not settings.DEBUG:
         logger.info("Debug mode disabled.")
         health = check_health()
@@ -40,6 +42,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
             logger.warning("Health check failed at startup. Skipping health check.")
     else:
         logger.info("Debug mode enabled.")
+
+    if auth_settings.RATE_LIMIT_ENABLED:
+        logger.info("Rate limit enabled.")
+    else:
+        logger.info("Rate limit disabled.")
+
     sweep_task = asyncio.create_task(sweep_stale_connections())
     yield
     sweep_task.cancel()
