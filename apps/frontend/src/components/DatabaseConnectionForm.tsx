@@ -61,56 +61,58 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
         <label htmlFor="custom">Custom</label>
         <br />
         <Activity mode={connectionType === "custom" ? "visible" : "hidden"}>
-          <div>
-            <label htmlFor="dbms">DBMS: </label>
-            <select name="dbms" id="dbms" required>
-              <option value="postgresql">PostgreSQL</option>
-              <option value="mysql">MySQL</option>
-              <option value="mariadb">MariaDB</option>
-              <option value="sqlite">SQLite</option>
-              <option value="oracle">Oracle</option>
-              <option value="mssql">Microsoft SQL Server</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="username">Username: </label>
-            <input type="text" name="username" id="username" required />
-          </div>
-          <div>
-            <label htmlFor="password">Password: </label>
-            <input type="password" name="password" id="password" required />
-          </div>
-          <div>
-            <label htmlFor="host">Host: </label>
-            <input type="text" name="host" id="host" required />
-          </div>
-          <div>
-            <label htmlFor="port">Port: </label>
-            <input
-              type="text"
-              name="port"
-              id="port"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              onChange={(e) => {
-                e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "");
-              }} // Only allow numeric input
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="database">Database: </label>
-            <input type="text" name="database" id="database" required />
-          </div>
-          <div>
-            <label htmlFor="schema">Schema: </label>
-            <input
-              type="text"
-              name="schema"
-              id="schema"
-              placeholder="Leave blank if not applicable"
-            />
-          </div>
+          <fieldset disabled={connectionType !== "custom"}>
+            <div>
+              <label htmlFor="dbms">DBMS: </label>
+              <select name="dbms" id="dbms" required>
+                <option value="postgresql">PostgreSQL</option>
+                <option value="mysql">MySQL</option>
+                <option value="mariadb">MariaDB</option>
+                <option value="sqlite">SQLite</option>
+                <option value="oracle">Oracle</option>
+                <option value="mssql">Microsoft SQL Server</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="username">Username: </label>
+              <input type="text" name="username" id="username" required />
+            </div>
+            <div>
+              <label htmlFor="password">Password: </label>
+              <input type="password" name="password" id="password" required />
+            </div>
+            <div>
+              <label htmlFor="host">Host: </label>
+              <input type="text" name="host" id="host" required />
+            </div>
+            <div>
+              <label htmlFor="port">Port: </label>
+              <input
+                type="text"
+                name="port"
+                id="port"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                onChange={(e) => {
+                  e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "");
+                }} // Only allow numeric input
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="database">Database: </label>
+              <input type="text" name="database" id="database" required />
+            </div>
+            <div>
+              <label htmlFor="schema">Schema: </label>
+              <input
+                type="text"
+                name="schema"
+                id="schema"
+                placeholder="Leave blank if not applicable"
+              />
+            </div>
+          </fieldset>
         </Activity>
         <button type="submit">Connect</button>
       </form>
