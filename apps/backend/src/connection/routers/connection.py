@@ -4,7 +4,6 @@ from fastapi import HTTPException, status
 from fastapi.routing import APIRouter
 
 from src.auth.dependencies import AuthUserId, CurrentUserId, OptionalUserId
-from src.auth.service.identities import delete_anon_id_cookie
 from src.connection.config import pl_settings
 from src.connection.database import custom_conn_manager
 from src.connection.exceptions import (
@@ -78,7 +77,6 @@ def disconnect(response: APIResponse, user_id: OptionalUserId):
         custom_conn_manager.disconnect(user_id=user_id)
         custom_conn_manager.clear_user_lock(user_id=user_id)
         response.status_code = status.HTTP_204_NO_CONTENT
-        delete_anon_id_cookie(response)
         return response
     except ConnectionNotFoundError:
         logger.warning("User did not establish a database connection before querying.")
