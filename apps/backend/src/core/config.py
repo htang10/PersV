@@ -10,6 +10,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
     DEBUG: bool = False
+    RATE_LIMIT_ENABLED: bool = True
     SERVER_HOST: str
     SERVER_PORT: int
 
