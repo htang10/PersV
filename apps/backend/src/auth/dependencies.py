@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from src.auth.config import auth_settings
 from src.auth.exceptions import InvalidAccessToken, InvalidRefreshToken
+from src.auth.rate_limits import anon_id_rl
 from src.auth.repository import get_user_by_id
 from src.auth.service.identities import (
     generate_anon_id,
@@ -19,8 +20,6 @@ from src.auth.service.tokens import (
     set_refresh_token_cookie,
     validate_access,
 )
-from src.auth.throttles import anon_1h_ip, anon_15m_ip
-from src.core.rate_limiter import check_limits, record_hits
 from src.core.utils import get_sqlalchemy_url
 
 __all__ = [
@@ -163,6 +162,7 @@ def get_optional_auth_user_id(
 
 
 def get_optional_current_user_id(
+    response: Response,
     user_id: str | None = Depends(get_optional_auth_user_id),
     anon_id: str | None = Cookie(default=None, include_in_schema=False),
 ) -> str | None:
@@ -172,6 +172,8 @@ def get_optional_current_user_id(
         The user id. None if not found/recognized.
     """
     if anon_id and is_valid_anon_id(anon_id):
+        # Reset the expiration whenever an existing anonymous id is reused
+        set_anon_id_cookie(response=response, anon_id=anon_id)
         return anon_id
 
     return user_id
@@ -191,6 +193,7 @@ def get_current_user_id(
         The user id, or a newly generated anonymous ID.
     """
     current_user_id = get_optional_current_user_id(
+        response=response,
         user_id=user_id,
         anon_id=anon_id,
     )
@@ -198,12 +201,7 @@ def get_current_user_id(
     if current_user_id:
         return current_user_id
 
-    anon_conn_limit = [
-        (anon_15m_ip, "anon_conn", "ip", request.client.host),
-        (anon_1h_ip, "anon_conn", "ip", request.client.host),
-    ]
-    check_limits(anon_conn_limit)
-    record_hits(anon_conn_limit)
+    anon_id_rl.consume(ip=request.client.host)
 
     new_anon_id = generate_anon_id()
     set_anon_id_cookie(response, anon_id=new_anon_id)
