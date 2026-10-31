@@ -12,3 +12,7 @@ class InvalidAccessToken(Exception):
 
 class InvalidRefreshToken(Exception):
     pass
+
+
+class EmailAlreadyUsed(Exception):
+    pass
