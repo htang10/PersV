@@ -10,3 +10,10 @@ services:
       - apps/backend/.env.production
     environment:
       - ENVIRONMENT=production
+
+  celery_worker:
+    build: apps/backend/
+    command: celery -A src.core.celery_app worker --loglevel=info
+    env_file:
+      - apps/backend/.env.production
+    restart: unless-stopped
