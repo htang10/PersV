@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from src.core.config import Settings
-from src.core.rate_limiter import Scope, RateLimitRules
+from src.core.rate_limiter import RateLimitRules, Scope
 
 
 class AuthSettings(Settings):
@@ -27,15 +27,16 @@ class AuthSettings(Settings):
     JWT_AUDIENCE: str = "persv-client"
 
     OTP_LIMITS: RateLimitRules = {
-        Scope.EMAIL: "5 per 10 minutes; 20 per hour",
-        Scope.IP: "10 per 10 minutes",
+        Scope.EMAIL: "3 per 10 minutes, 10 per hour",
+        Scope.IP: "9 per 10 minutes, 20 per hour",
+        Scope.USER_ID: "5 per hour",  # Email change's specific policy
     }
     EMAIL_VERIFICATION_LIMITS: RateLimitRules = {
-        Scope.EMAIL: "5 per 5 minutes; 20 per hour",
-        Scope.IP: "20 per 10 minutes",
+        Scope.EMAIL: "5 per 5 minutes, 20 per hour",
+        Scope.IP: "15 per 10 minutes, 30 per hour",
     }
     ANON_ID_LIMITS: RateLimitRules = {
-        Scope.IP: "3 per 15 minutes; 10 per hour",
+        Scope.IP: "5 per 15 minutes, 15 per hour",
     }
     EMAIL_CHANGE_LIMITS: RateLimitRules = {
         Scope.USER_ID: "1 per 30 days",
