@@ -14,5 +14,9 @@ class InvalidRefreshToken(Exception):
     pass
 
 
+class EmailUnchanged(Exception):
+    pass
+
+
 class EmailAlreadyUsed(Exception):
     pass
