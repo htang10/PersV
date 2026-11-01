@@ -7,6 +7,6 @@ anon_id_rl = RateLimiter("anon", auth_settings.ANON_ID_LIMITS)
 email_change_verification_rl = RateLimiter(
     "email-change/verification", auth_settings.EMAIL_VERIFICATION_LIMITS
 )
-email_change_rl = RateLimiter(
-    "email-change/attempts", auth_settings.EMAIL_CHANGE_LIMITS
+email_change_success_rl = RateLimiter(
+    "email-change/success", auth_settings.EMAIL_CHANGE_LIMITS
 )
