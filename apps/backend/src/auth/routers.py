@@ -95,8 +95,8 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
         )
 
     try:  # Login
-        logger.info(f"Existing user found with email {email}. Attempt login.")
         user = get_user_by_email(email, session)
+        logger.info(f"Existing user found with email {email}. Attempt login.")
     except UserNotFound:  # Sign-up
         logger.info(f"No user found with email {email}. Attempt sign-up.")
         user = create_user(email, session)
