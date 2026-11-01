@@ -2,8 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.types import NormalizedEmail
-
 
 class UserProfile(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -18,9 +16,6 @@ class UserProfile(BaseModel):
 class UserProfileUpdate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    email: NormalizedEmail | None = Field(
-        alias="new_email", default=None, description="New email address."
-    )
     display_name: str | None = Field(
         alias="new_display_name",
         default=None,
