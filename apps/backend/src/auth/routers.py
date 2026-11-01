@@ -5,15 +5,33 @@ from fastapi.routing import APIRouter
 
 from src.auth.config import auth_settings
 from src.auth.dependencies import AuthSessionDep, AuthUserId
-from src.auth.exceptions import InvalidEmailOrOTP, UserNotFound
-from src.auth.repository import create_user, get_user_by_email, update_login_metadata
+from src.auth.exceptions import (
+    EmailAlreadyUsed,
+    EmailUnchanged,
+    InvalidEmailOrOTP,
+    UserNotFound,
+)
+from src.auth.rate_limits import (
+    email_change_success_rl,
+    email_change_verification_rl,
+    login_rl,
+    otp_rl,
+)
+from src.auth.repository import (
+    create_user,
+    get_user_by_email,
+    get_user_by_id,
+    update_login_metadata,
+)
 from src.auth.schemas import (
     AuthResponse,
+    EmailChangeRequest,
     OTPLoginRequest,
     OTPRequest,
     OTPResponse,
     SessionValidationResponse,
 )
+from src.auth.service.email_change import change_email
 from src.auth.service.otp import delete_code, verify_code
 from src.auth.service.tokens import (
     create_access_token,
@@ -25,15 +43,6 @@ from src.auth.service.tokens import (
     validate_refresh_token,
 )
 from src.auth.tasks import send_login_otp_task
-from src.auth.throttles import (
-    login_1h_email,
-    login_5m_email,
-    login_10m_ip,
-    otp_1h_email,
-    otp_10m_email,
-    otp_10m_ip,
-)
-from src.core.rate_limiter import check_limits, record_hits
 from src.core.responses import APIResponse
 
 router = APIRouter()
@@ -49,14 +58,12 @@ logger = logging.getLogger(__name__)
 )
 def generate_otp(body: OTPRequest, request: Request):
     email = body.email
-    limits = [
-        (otp_10m_email, "otp_request", "email", email),
-        (otp_1h_email, "otp_request", "email", email),
-        (otp_10m_ip, "otp_request", "ip", request.client.host),
-    ]
-    check_limits(limits)
-    send_login_otp_task.delay(email)
-    record_hits(limits)
+
+    # Reject if the email or IP limit is exhausted. Counted once the code is queued.
+    attempt = otp_rl.check(email=email, ip=request.client.host)
+    # Sent in the background so the response does not wait on email delivery.
+    send_login_otp_task.delay(email=email)
+    attempt.record()
 
     expiry = auth_settings.OTP_EXP.total_seconds()
     return OTPResponse(to=email, expires_in=expiry)
@@ -73,18 +80,15 @@ def generate_otp(body: OTPRequest, request: Request):
 def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
     email = body.email
     code = body.code
-    limits = [
-        (login_5m_email, "login", "email", email),
-        (login_1h_email, "login", "email", email),
-        (login_10m_ip, "login", "ip", request.client.host),
-    ]
-    check_limits(limits)
+
+    # Reject if either limit is exhausted. Counted later, only on failed login.
+    attempt = login_rl.check(email=email, ip=request.client.host)
 
     try:
         verify_code(email, code)
-        delete_code(email)
+        delete_code(email)  # Single use: the code cannot be replayed.
     except InvalidEmailOrOTP:
-        record_hits(limits)
+        attempt.record()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect email or passcode.",
@@ -97,10 +101,11 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
         logger.info(f"No user found with email {email}. Attempt sign-up.")
         user = create_user(email, session)
 
-    # Update user metadata
+    # Update user metadata. The forwarded header carries the client IP behind a proxy.
     ip_address = request.headers.get("X-Forwarded-For", request.client.host)
     update_login_metadata(user=user, ip_address=ip_address, db_session=session)
 
+    # The access token goes in the body. The refresh token goes in a cookie and starts the session.
     user_id = str(user.id)
     response = APIResponse(
         content=AuthResponse(
@@ -123,6 +128,7 @@ def login(body: OTPLoginRequest, session: AuthSessionDep, request: Request):
 def validate_session(
     refresh_token: str | None = Cookie(default=None, include_in_schema=False),
 ):
+    # No cookie means no session.
     if refresh_token is None:
         return SessionValidationResponse(valid=False)
     return SessionValidationResponse(valid=validate_refresh_token(token=refresh_token))
@@ -152,4 +158,70 @@ def logout_all_sessions(response: APIResponse, user_id: AuthUserId):
     revoke_all_user_sessions(user_id=user_id)
     delete_refresh_token_cookie(response)
     response.status_code = status.HTTP_204_NO_CONTENT
+    return response
+
+
+@router.put(
+    "/email",
+    summary="Update the email address",
+    description="""Changes the account email after verifying a code sent to both
+    the current and the new address. Generates new authentication tokens on success.""",
+)
+def change_email_address(
+    user_id: AuthUserId,
+    body: EmailChangeRequest,
+    session: AuthSessionDep,
+    request: Request,
+):
+    user = get_user_by_id(user_id=user_id, db_session=session)
+    ip_address = request.headers.get("X-Forwarded-For", request.client.host)
+
+    # Two limits, checked up front. Wrong codes are counted per email and IP, successful changes per user.
+    failed_verification = email_change_verification_rl.check(
+        email=user.email, ip=ip_address
+    )
+    success_attempts = email_change_success_rl.check(user_id=user_id)
+
+    try:
+        change_email(
+            user=user,
+            new_email=body.new_email,
+            new_email_code=body.new_email_code,
+            current_email_code=body.current_email_code,
+            ip_address=ip_address,
+            db_session=session,
+        )
+    except EmailUnchanged:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Currently registered with {body.new_email}.",
+        )
+    except InvalidEmailOrOTP:
+        failed_verification.record()  # Only wrong codes count as failures.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect email or passcodes.",
+        )
+    except EmailAlreadyUsed:
+        logger.warning(
+            f"User {user_id} tried to switch to an email used by another user."
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already used."
+        )
+
+    success_attempts.record()
+    logger.info(f"User with id {user_id} successfully changed their email address.")
+
+    # Revoke every existing session so no old token survives the email change,
+    # then start a fresh one.
+    revoke_all_user_sessions(user_id=user_id)
+    response = APIResponse(
+        content=AuthResponse(
+            token=create_access_token(user_id=user_id),
+        ).model_dump()
+    )
+    set_refresh_token_cookie(
+        response, refresh_token=create_refresh_token(user_id=user_id)
+    )
     return response
