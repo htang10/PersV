@@ -23,7 +23,7 @@ def verify_code(email: str, code: str) -> None:
     """Validates the OTP against the stored hash using a timing-safe comparison.
 
     Raises:
-        InvalidCode: The OTP is missing or incorrect.
+        InvalidEmailOrOTP: Either email address or OTP is missing/incorrect.
     """
     hashed_input = hash_credential(credential=code)
     stored = redis_client.get(f"otp:{email}")
