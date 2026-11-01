@@ -5,6 +5,7 @@ hold across server instances. Exceeding any limit rejects the request with 429.
 """
 
 from enum import StrEnum
+from typing import TypedDict, Unpack
 
 from fastapi import HTTPException, status
 from limits import RateLimitItem, parse_many
@@ -23,8 +24,23 @@ class Scope(StrEnum):
     USER_ID = "user_id"
 
 
-RateLimitRules = dict[Scope, str]  # Limit expressions per scope, e.g. {Scope.IP: "5/minute"}
+class Identifiers(TypedDict, total=False):
+    email: str
+    ip: str
+    user_id: str
+
+
+RateLimitRules = dict[
+    Scope, str
+]  # Limit expressions per scope, e.g. {Scope.IP: "5/minute"}
 LimitKeys = list[tuple[RateLimitItem, str]]  # Each limit paired with its counter key
+
+
+def _rate_limit_exceeded() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail="Too many attempts. Try again later.",
+    )
 
 
 class _PlainKeyRedisStorage(RedisStorage):
@@ -37,13 +53,6 @@ class _PlainKeyRedisStorage(RedisStorage):
 
 _storage = _PlainKeyRedisStorage(uri=get_redis_url(), key_prefix="limits")
 _limiter = SlidingWindowCounterRateLimiter(_storage)
-
-
-def _rate_limit_exceeded() -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail="Too many attempts. Try again later.",
-    )
 
 
 class Attempt:
@@ -82,7 +91,7 @@ class RateLimiter:
                 self.rules.append((scope, item))
         self.required_scopes = {scope.value for scope in rules}
 
-    def check(self, **identifiers: str) -> Attempt:
+    def check(self, **identifiers: Unpack[Identifiers]) -> Attempt:
         """Verifies no limit is exhausted, without counting the request.
 
         Args:
@@ -95,13 +104,13 @@ class RateLimiter:
             HTTPException: 429 if any limit is exhausted.
             ValueError: If the identifiers do not match the limiter's scopes.
         """
-        keys = self._keys(identifiers)
+        keys = self._keys(dict(identifiers))
         for key in keys:
             if not _limiter.test(*key):
                 raise _rate_limit_exceeded()
         return Attempt(keys)
 
-    def consume(self, **identifiers: str) -> None:
+    def consume(self, **identifiers: Unpack[Identifiers]) -> None:
         """Counts the request and rejects it if any limit is exceeded.
 
         Args:
@@ -111,19 +120,20 @@ class RateLimiter:
             HTTPException: 429 if any limit is exceeded by this request.
             ValueError: If the identifiers do not match the limiter's scopes.
         """
-        for key in self._keys(identifiers):
+        for key in self._keys(dict(identifiers)):
             if not _limiter.hit(*key):
                 raise _rate_limit_exceeded()
 
-    def _keys(self, identifiers: dict[str, str]) -> LimitKeys:
+    def _keys(self, identifiers: dict[str, str | None]) -> LimitKeys:
         """Builds the counter key of every limit for the given identifiers."""
-        if set(identifiers) != self.required_scopes:
+        if not identifiers or not identifiers.keys() <= self.required_scopes:
             raise ValueError(
                 f"Expected identifiers {sorted(self.required_scopes)}, got {sorted(identifiers)}"
             )
         if not settings.RATE_LIMIT_ENABLED:
             return []
         return [
-            (item, f":{scope.value}:{identifiers[scope.value]}:")
+            (item, f":{scope.value}:{identifiers.get(scope.value)}:")
             for scope, item in self.rules
+            if identifiers.get(scope.value) is not None
         ]
