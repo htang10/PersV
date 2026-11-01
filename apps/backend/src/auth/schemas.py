@@ -68,3 +68,17 @@ class SessionValidationResponse(BaseModel):
     valid: bool = Field(
         description="Whether the current authentication session is valid."
     )
+
+
+class EmailChangeRequest(BaseModel):
+    new_email: NormalizedEmail = Field(description="The email address to switch to.")
+    new_email_code: str = Field(
+        description="The 6-digit one-time password sent to the new email address.",
+        pattern=r"^\d{6}$",
+        examples=["123456"],
+    )
+    current_email_code: str = Field(
+        description="The 6-digit one-time password sent to the current email address the account is registered with.",
+        pattern=r"^\d{6}$",
+        examples=["123456"],
+    )
