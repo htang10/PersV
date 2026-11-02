@@ -86,7 +86,8 @@ export const _post_AuthLogoutAll = <ThrowOnError extends boolean = false>(option
 /**
  * Update the email address
  *
- * Updates the email address of the user.
+ * Changes the account email after verifying a code sent to both
+ * the current and the new address. Generates new authentication tokens on success.
  */
 export const _put_AuthEmail = <ThrowOnError extends boolean = false>(options: Options<PutAuthEmailData, ThrowOnError>): RequestResult<PutAuthEmailResponses, PutAuthEmailErrors, ThrowOnError> => (options.client ?? client).put<PutAuthEmailResponses, PutAuthEmailErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

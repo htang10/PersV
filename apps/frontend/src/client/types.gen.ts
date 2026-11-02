@@ -100,6 +100,30 @@ export type ConnectionStatus = {
 export type Dbms = 'postgresql' | 'mysql' | 'mariadb' | 'sqlite' | 'oracle' | 'mssql';
 
 /**
+ * EmailChangeRequest
+ */
+export type EmailChangeRequest = {
+    /**
+     * New Email
+     *
+     * The email address to switch to.
+     */
+    new_email: string;
+    /**
+     * New Email Code
+     *
+     * The 6-digit one-time password sent to the new email address.
+     */
+    new_email_code: string;
+    /**
+     * Current Email Code
+     *
+     * The 6-digit one-time password sent to the current email address the account is registered with.
+     */
+    current_email_code: string;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -277,12 +301,6 @@ export type UserProfile = {
  */
 export type UserProfileUpdate = {
     /**
-     * New Email
-     *
-     * New email address.
-     */
-    new_email?: string | null;
-    /**
      * New Display Name
      *
      * New display name. Length restrictions must be met.
@@ -456,7 +474,7 @@ export type PostAuthLogoutAllResponses = {
 };
 
 export type PutAuthEmailData = {
-    body: OtpLoginRequest;
+    body: EmailChangeRequest;
     path?: never;
     query?: never;
     url: '/auth/email';
