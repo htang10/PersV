@@ -139,6 +139,7 @@ def validate_session(
     summary="Revoke the current session",
     description="""Invalidates the refresh token stored in the HTTP-only cookie,
     ending the current session. The client is responsible for discarding the access token.""",
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 def logout(response: APIResponse, refresh_token: str = Cookie(include_in_schema=False)):
     revoke_refresh_token(refresh_token)
@@ -153,6 +154,7 @@ def logout(response: APIResponse, refresh_token: str = Cookie(include_in_schema=
     description="""Invalidates all refresh tokens belonging to the user,
     ending all sessions including the current one. The client is responsible
     for discarding the access token.""",
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 def logout_all_sessions(response: APIResponse, user_id: AuthUserId):
     revoke_all_user_sessions(user_id=user_id)
@@ -166,6 +168,7 @@ def logout_all_sessions(response: APIResponse, user_id: AuthUserId):
     summary="Update the email address",
     description="""Changes the account email after verifying a code sent to both
     the current and the new address. Generates new authentication tokens on success.""",
+    response_model=AuthResponse
 )
 def change_email_address(
     user_id: AuthUserId,
