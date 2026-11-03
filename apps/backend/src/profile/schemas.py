@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -8,9 +6,6 @@ class UserProfile(BaseModel):
 
     email: str = Field(description="The email address that the user registered with.")
     display_name: str = Field(description="The display name that the user set.")
-    created_at: datetime = Field(
-        description="The datetime that user created their account."
-    )
 
 
 class UserProfileUpdate(BaseModel):
