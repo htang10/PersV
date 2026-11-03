@@ -288,12 +288,6 @@ export type UserProfile = {
      * The display name that the user set.
      */
     display_name: string;
-    /**
-     * Created At
-     *
-     * The datetime that user created their account.
-     */
-    created_at: string;
 };
 
 /**
@@ -447,8 +441,10 @@ export type PostAuthLogoutResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    204: void;
 };
+
+export type PostAuthLogoutResponse = PostAuthLogoutResponses[keyof PostAuthLogoutResponses];
 
 export type PostAuthLogoutAllData = {
     body?: never;
@@ -470,8 +466,10 @@ export type PostAuthLogoutAllResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    204: void;
 };
+
+export type PostAuthLogoutAllResponse = PostAuthLogoutAllResponses[keyof PostAuthLogoutAllResponses];
 
 export type PutAuthEmailData = {
     body: EmailChangeRequest;
@@ -493,8 +491,10 @@ export type PutAuthEmailResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    200: AuthResponse;
 };
+
+export type PutAuthEmailResponse = PutAuthEmailResponses[keyof PutAuthEmailResponses];
 
 export type PostConnectionDemoData = {
     body?: never;
