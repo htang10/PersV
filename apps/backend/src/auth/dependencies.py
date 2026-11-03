@@ -36,8 +36,7 @@ AUTH_ENGINE = create_engine(
     pool_pre_ping=True,
     pool_recycle=300,
 )
-required_bearer = HTTPBearer()
-optional_bearer = HTTPBearer(auto_error=False)
+http_bearer = HTTPBearer(auto_error=False)
 logger = logging.getLogger(__name__)
 
 
@@ -113,7 +112,7 @@ def _authenticate(
 
 def get_auth_user_id(
     response: Response,
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(required_bearer)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(http_bearer)],
     refresh_token: str | None = Cookie(default=None, include_in_schema=False),
     db_session: Session = Depends(get_auth_db),
 ) -> str:
@@ -141,7 +140,7 @@ def get_auth_user_id(
 def get_optional_auth_user_id(
     response: Response,
     credentials: Annotated[
-        HTTPAuthorizationCredentials | None, Depends(optional_bearer)
+        HTTPAuthorizationCredentials | None, Depends(http_bearer)
     ],
     refresh_token: str | None = Cookie(default=None, include_in_schema=False),
     session: Session = Depends(get_auth_db),
