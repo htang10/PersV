@@ -9,7 +9,7 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
   const [connectionType, setConnectionType] = useState<ConnectionType>("demo");
   const [connError, setConnError] = useState<string | null>(null);
 
-  async function handleConnection(event: React.SubmitEvent<HTMLFormElement>) {
+  const handleConnection = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       if (connectionType === "demo") {
@@ -32,7 +32,7 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
     } catch (error) {
       setConnError(errorMessage(error));
     }
-  }
+  };
 
   return (
     <div>
