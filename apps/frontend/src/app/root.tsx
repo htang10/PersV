@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { validateCurrentSession } from "@/services/auth";
+
+const queryClient = new QueryClient();
 
 function AuthBootstrap({ children }: { children: React.ReactNode }) {
   const { setIsAuthenticated } = useAuth();
@@ -60,9 +63,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function Root() {
   return (
     <AuthProvider>
-      <AuthBootstrap>
-        <Outlet />
-      </AuthBootstrap>
+      <QueryClientProvider client={queryClient}>
+        <AuthBootstrap>
+          <Outlet />
+        </AuthBootstrap>
+      </QueryClientProvider>
     </AuthProvider>
   );
 }
