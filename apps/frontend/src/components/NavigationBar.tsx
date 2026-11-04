@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigateNotice } from "@/hooks/useNavigateNotice";
 import { logout } from "@/services/auth";
 import { authTokenStore } from "@/services/token";
+import { queryClient } from "@/lib/queryClient";
 
 export function NavigationBar() {
   const { isAuthenticated, setIsAuthenticated } = useAuth();
@@ -29,13 +31,18 @@ export function NavigationBar() {
     };
   }, [menuProfileOpen]);
 
-  const handleLogout = async () => {
-    setMenuProfileOpen(false); // close the menu immediately to avoid a flash of the menu after logout
-    await logout(); // server clears the HttpOnly refresh cookie
-    authTokenStore.expireSession();
-    setIsAuthenticated(false);
-    navigateNotice("/connect", { type: "info", message: "Logged out." });
-  };
+  const handleLogout = useMutation({
+    mutationFn: async () => {
+      setMenuProfileOpen(false); // close the menu immediately to avoid a flash of the menu after logout
+      await logout(); // server clears the HttpOnly refresh cookie
+    },
+    onSuccess: () => {
+      queryClient.clear(); // clear all cached queries to avoid showing stale data after logout
+      authTokenStore.expireSession();
+      setIsAuthenticated(false);
+      navigateNotice("/connect", { type: "info", message: "Logged out." });
+    },
+  });
 
   return (
     <header>
@@ -63,8 +70,8 @@ export function NavigationBar() {
                   </Link>
                 </li>
                 <li>
-                  <button type="button" onClick={handleLogout}>
-                    Log out
+                  <button onClick={() => handleLogout.mutate()} disabled={handleLogout.isPending}>
+                    {handleLogout.isPending ? "Logging out..." : "Log out"}
                   </button>
                 </li>
               </ul>
