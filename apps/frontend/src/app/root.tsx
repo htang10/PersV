@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { validateCurrentSession } from "@/services/auth";
-
-const queryClient = new QueryClient();
+import { queryClient } from "@/lib/queryClient";
 
 function AuthBootstrap({ children }: { children: React.ReactNode }) {
   const { setIsAuthenticated } = useAuth();
