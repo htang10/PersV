@@ -1,33 +1,42 @@
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Setting } from "@/components";
 import { getUserProfile, updateUserProfile } from "@/services/profile";
-import { logout, logoutAllSessions, updateEmail } from "@/services/auth";
+import { logoutAllSessions } from "@/services/auth";
 import { NavigationBar } from "@/components";
+import { useNavigateNotice } from "@/hooks/useNavigateNotice";
 
 export function meta() {
   return [{ title: "Settings" }];
 }
 
 export default function Settings() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const navigateNotice = useNavigateNotice();
 
-  const backToPreviousPage = async () => {
+  const handleBackToPreviousPage = async () => {
     await navigate(-1);
   };
 
-  const updateDisplayName = async (newDisplayName: string) => {
+  const handleUpdateDisplayName = async (newDisplayName: string) => {
     await updateUserProfile({ new_display_name: newDisplayName });
   };
 
-  const updateEmail = async (newEmail: string) => {};
+  const handleLogoutAllDevices = useMutation({
+    mutationFn: logoutAllSessions,
+    onSuccess: () => {
+      queryClient.clear(); // clear all cached queries to avoid showing stale data after logout
+      navigateNotice("/connect", {
+        type: "info",
+        message: "Logged out of all devices.",
+      });
+    },
+  });
 
   const { isPending, isError, data, error } = useQuery({
     queryKey: ["profile"],
     queryFn: getUserProfile,
-    staleTime: 5 * 60 * 1000, // How long data is considered fresh in milliseconds (5 minutes)
-    gcTime: 30 * 60 * 1000, // How long data is retained in the cache in milliseconds (30 minutes)
-    refetchOnWindowFocus: true, // Perform a data refetch to ensure the data is up-to-date when the window regains focus (tab switching)
   });
 
   if (isPending) {
@@ -41,7 +50,7 @@ export default function Settings() {
   return (
     <>
       <NavigationBar />
-      <button onClick={backToPreviousPage}>
+      <button onClick={handleBackToPreviousPage}>
         <span>Back</span>
       </button>
       <div>
@@ -55,11 +64,12 @@ export default function Settings() {
               label="Display Name"
               name="displayName"
               initial={data?.display_name ?? ""}
-              onSave={updateDisplayName}
+              onSave={handleUpdateDisplayName}
             />
           </div>
           <div>
-            <Setting label="Email" name="email" initial={data?.email ?? ""} onSave={updateEmail} />
+            {/* Add a setting for email. Email update will be implemented later */}
+            <Setting label="Email" name="email" initial={data?.email ?? ""} onSave={() => void 0} />
           </div>
         </section>
         <hr />
@@ -68,7 +78,12 @@ export default function Settings() {
           <div>
             <h2>Log out of all devices</h2>
             <p>Log out of all active sessions across all devices, including this one.</p>
-            <button>Log out of all devices</button>
+            <button
+              onClick={() => handleLogoutAllDevices.mutate()}
+              disabled={handleLogoutAllDevices.isPending}
+            >
+              {handleLogoutAllDevices.isPending ? "Logging out..." : "Log out all devices"}
+            </button>
           </div>
           <div>
             <h2>Delete account</h2>
