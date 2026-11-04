@@ -1,34 +1,3 @@
-# =================== FRONTEND ===================
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# React Router
-.react-router/
-.build/
-
-# =================== BACKEND ===================
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -252,5 +221,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 # PERSONAL
-/apps/backend/scripts
-/apps/backend/test.py
+/scripts
+test.py
