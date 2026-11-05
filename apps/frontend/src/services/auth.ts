@@ -46,11 +46,17 @@ export async function logoutAllSessions(): Promise<PostAuthLogoutAllResponse> {
   );
 }
 
-export async function updateEmail(
-  newEmail: string,
-  newEmailCode: string,
-  currentEmailCode: string,
-): Promise<PutAuthEmailResponse> {
+type UpdateEmailParams = {
+  newEmail: string;
+  newEmailCode: string;
+  currentEmailCode: string;
+};
+
+export async function updateEmail({
+  newEmail,
+  newEmailCode,
+  currentEmailCode,
+}: UpdateEmailParams): Promise<PutAuthEmailResponse> {
   return await fetchAPI<PutAuthEmailData, PutAuthEmailResponse>("PUT", "/auth/email", {
     body: {
       new_email: newEmail,
