@@ -4,7 +4,7 @@ type SettingProps = {
   label: string;
   name: string;
   initial: string;
-  onSave: (newValue: string) => void;
+  onSave: (newValue: string) => Promise<void>;
 };
 
 export function Setting({ label, name, initial, onSave }: SettingProps) {
@@ -25,8 +25,8 @@ export function Setting({ label, name, initial, onSave }: SettingProps) {
     setIsEditing(false);
   }
 
-  function handleSave() {
-    onSave(value);
+  async function handleSave() {
+    await onSave(value);
     setIsEditing(false);
   }
 
