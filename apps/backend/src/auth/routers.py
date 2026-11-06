@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import Cookie, HTTPException, Request, status
+from fastapi import BackgroundTasks, Cookie, HTTPException, Request, status
 from fastapi.routing import APIRouter
 
 from src.auth.config import auth_settings
@@ -32,6 +32,7 @@ from src.auth.schemas import (
     SessionValidationResponse,
 )
 from src.auth.service.email_change import change_email
+from src.auth.service.mailing import send_otp
 from src.auth.service.otp import delete_code, verify_code
 from src.auth.service.tokens import (
     create_access_token,
@@ -42,7 +43,6 @@ from src.auth.service.tokens import (
     set_refresh_token_cookie,
     validate_refresh_token,
 )
-from src.auth.tasks import send_login_otp_task
 from src.core.responses import APIResponse
 
 router = APIRouter()
@@ -56,13 +56,15 @@ logger = logging.getLogger(__name__)
     Use the returned code with `POST /auth/login` to authenticate.""",
     response_model=OTPResponse,
 )
-def generate_otp(body: OTPRequest, request: Request):
+def generate_otp(body: OTPRequest, background_tasks: BackgroundTasks, request: Request):
     email = body.email
+    mailing_purpose = body.purpose
 
     # Reject if the email or IP limit is exhausted. Counted once the code is queued.
     attempt = otp_rl.check(email=email, ip=request.client.host)
     # Sent in the background so the response does not wait on email delivery.
-    send_login_otp_task.delay(email=email)
+    # Error on email delivery side does not invalidate user requests.
+    background_tasks.add_task(send_otp, email, mailing_purpose)
     attempt.record()
 
     expiry = auth_settings.OTP_EXP.total_seconds()
@@ -168,7 +170,7 @@ def logout_all_sessions(response: APIResponse, user_id: AuthUserId):
     summary="Update the email address",
     description="""Changes the account email after verifying a code sent to both
     the current and the new address. Generates new authentication tokens on success.""",
-    response_model=AuthResponse
+    response_model=AuthResponse,
 )
 def change_email_address(
     user_id: AuthUserId,
