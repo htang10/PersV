@@ -93,7 +93,7 @@ app.include_router(profile_router, prefix="/users", tags=["profile"])
 register_exception_handlers(app=app)
 
 # # Allow deployment environments to override the default worker count
-workers_count = int(os.getenv("WEB_CONCURRENCY", 5))
+workers_count = int(os.getenv("WEB_CONCURRENCY", 1))
 if workers_count < 1:
     raise ValueError("WEB_CONCURRENCY must be at least 1")
 
@@ -109,7 +109,9 @@ if __name__ == "__main__":
         reload=(not is_prod),  # Disable server reload on changes when deployed
         http="httptools",
         access_log=False,
-        proxy_headers=False,  # No proxy in front, skip Uvicorn's X-Forwarded-* middleware
+        # Uvicorn reads the `X-Forwarded-For` header, setting
+        # `request.client.host` to the client IP instead of the proxy's
+        proxy_headers=True,
         server_header=False,
         timeout_keep_alive=75,  # Keep idle connections open for at least 75s
         backlog=4096,
