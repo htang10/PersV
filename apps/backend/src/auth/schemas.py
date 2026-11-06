@@ -1,6 +1,23 @@
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
 from src.core.types import NormalizedEmail
+
+
+class MailingPurpose(StrEnum):
+    LOGIN = "login"
+    EMAIL_CHANGE = "email_change"
+    ACCOUNT_DELETION = "account_deletion"
+
+    @property
+    def render(self) -> str:
+        """Returns the value that will be rendered inside the email to be sent."""
+        return {
+            MailingPurpose.LOGIN: "sign-up/login",
+            MailingPurpose.EMAIL_CHANGE: "email change",
+            MailingPurpose.ACCOUNT_DELETION: "account deletion",
+        }[self]
 
 
 class OTPRequest(BaseModel):
@@ -12,6 +29,7 @@ class OTPRequest(BaseModel):
     """
 
     email: NormalizedEmail = Field(description="The user's email address.")
+    purpose: MailingPurpose = Field(description="The purpose of the OTP request.")
 
 
 class OTPResponse(BaseModel):
