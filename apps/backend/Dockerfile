@@ -17,6 +17,4 @@ COPY . .
 
 ENV PATH="/backend/.venv/bin:$PATH"
 
-EXPOSE 80
-
 CMD ["python3", "-m", "src.main"]
