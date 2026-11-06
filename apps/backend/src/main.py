@@ -26,6 +26,7 @@ from src.core.responses import APIResponse
 from src.profile.routers import router as profile_router
 
 logger = logging.getLogger(__name__)
+is_prod: bool = os.getenv("ENVIRONMENT") == "production"
 
 
 @asynccontextmanager
@@ -63,6 +64,9 @@ def generate_unique_op_id(route: APIRoute) -> str:
 
 
 app = FastAPI(
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
+    openapi_url=None if is_prod else "/openapi.json",
     lifespan=lifespan,
     default_response_class=APIResponse,
     generate_unique_id_function=generate_unique_op_id,
@@ -98,7 +102,6 @@ if workers_count < 1:
     raise ValueError("WEB_CONCURRENCY must be at least 1")
 
 if __name__ == "__main__":
-    is_prod: bool = os.getenv("ENVIRONMENT") == "production"
     uvicorn.run(
         "src.main:app",
         host=settings.SERVER_HOST,
