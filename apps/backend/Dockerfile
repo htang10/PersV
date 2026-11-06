@@ -6,8 +6,12 @@ RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock ./
 
-RUN --mount=type=cache,target=/root/.cache/uv  \
-    uv sync --locked --no-dev
+RUN if [ "$ENVIRONMENT" = "production" ]; then \
+    --mount=type=cache,target=/root/.cache/uv  \
+    uv sync --locked --no-dev; \
+    else \
+    uv sync --locked --no-dev --no-cache; \
+    fi
 
 COPY . .
 
