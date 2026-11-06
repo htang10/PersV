@@ -15,6 +15,7 @@ from jinja2 import Environment, PackageLoader, TemplateSyntaxError, select_autoe
 from jinja2.exceptions import TemplateNotFound
 
 from src.auth.config import auth_settings
+from src.auth.schemas import MailingPurpose
 from src.auth.service.otp import generate_code, save_code
 from src.auth.utils import html_to_text
 
@@ -40,7 +41,9 @@ def _render_template(template_name: str, **kwargs: Any) -> tuple[str, str]:
 
 
 def _send_email(recipient: str, message: MIMEMultipart) -> None:
-    with smtplib.SMTP(auth_settings.SMTP_HOST, auth_settings.SMTP_PORT) as server:
+    with smtplib.SMTP(
+        auth_settings.SMTP_HOST, auth_settings.SMTP_PORT, timeout=10
+    ) as server:
         server.starttls()
         server.login(auth_settings.SMTP_USERNAME, auth_settings.SMTP_PASSWORD)
         server.sendmail(auth_settings.FROM_EMAIL, recipient, message.as_string())
@@ -65,11 +68,13 @@ def handle_mailing_errors() -> Generator[None, Any, None]:
         logger.error(f"Unexpected error: {e}")
 
 
-def send_login_otp(email: str) -> None:
-    """Generates a login OTP code and emails it to the user.
+def send_otp(email: str, purpose: MailingPurpose) -> None:
+    """Generates a one-time passcode and emails it to the user.
 
     Args:
         email: The recipient's email address.
+        purpose: What the code authorizes. Determines the email content and
+        restricts the code to that use.
     """
     with handle_mailing_errors():
         expiry = auth_settings.OTP_EXP
@@ -77,7 +82,8 @@ def send_login_otp(email: str) -> None:
         save_code(hashed_code, email, expiry)
 
         html_content, text_content = _render_template(
-            "login.html",
+            "otp.html",
+            purpose=MailingPurpose(purpose).render,
             code=raw_code,
             expire_minutes=int(expiry.total_seconds() // 60),
         )
@@ -85,7 +91,7 @@ def send_login_otp(email: str) -> None:
         message = MIMEMultipart("alternative")
         message["From"] = auth_settings.FROM_EMAIL
         message["To"] = email
-        message["Subject"] = "Confirmation code to log in your account"
+        message["Subject"] = "Confirmation code to verify your account ownership"
         message.attach(MIMEText(text_content, "plain"))
         message.attach(MIMEText(html_content, "html"))
 
