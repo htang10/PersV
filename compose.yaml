@@ -2,18 +2,13 @@ name: persv
 
 services:
   backend:
+    image: persv/backend:latest
     build: apps/backend/
     restart: unless-stopped
     ports:
-      - "8000:80"
+      - "8000:8000" # Development testing
+      - "8080:8080" # Production testing
     env_file:
       - apps/backend/.env.production
     environment:
       - ENVIRONMENT=production
-
-  celery_worker:
-    build: apps/backend/
-    command: celery -A src.core.celery_app worker --loglevel=info
-    env_file:
-      - apps/backend/.env.production
-    restart: unless-stopped
