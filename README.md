@@ -24,7 +24,7 @@ A tool that lets user ask plain-English questions to retrieve data from a relati
 
 ## Live API 🚀
 
-https://persv.onrender.com/docs
+https://persv-server.cloud.run/docs/
 
 Interactive API docs (Swagger UI) for the deployed backend. Try the endpoints directly!
 
