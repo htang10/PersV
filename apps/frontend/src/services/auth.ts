@@ -12,17 +12,19 @@ import type {
   PutAuthEmailData,
   PutAuthEmailResponse,
 } from "@/client";
+import type { OTPRequest, LoginRequest, UpdateEmailRequest } from "@/types/auth";
 import { fetchAPI } from "./api";
 
-export async function sendOTP(email: string): Promise<PostAuthOtpResponse> {
+export async function sendOTP({ email, purpose }: OTPRequest): Promise<PostAuthOtpResponse> {
   return await fetchAPI<PostAuthOtpData, PostAuthOtpResponse>("POST", "/auth/otp", {
     body: {
       email: email,
+      purpose: purpose,
     },
   });
 }
 
-export async function login(email: string, otp: string): Promise<PostAuthLoginResponse> {
+export async function login({ email, otp }: LoginRequest): Promise<PostAuthLoginResponse> {
   return await fetchAPI<PostAuthLoginData, PostAuthLoginResponse>("POST", "/auth/login", {
     body: {
       email: email,
@@ -46,17 +48,11 @@ export async function logoutAllSessions(): Promise<PostAuthLogoutAllResponse> {
   );
 }
 
-type UpdateEmailParams = {
-  newEmail: string;
-  newEmailCode: string;
-  currentEmailCode: string;
-};
-
 export async function updateEmail({
   newEmail,
   newEmailCode,
   currentEmailCode,
-}: UpdateEmailParams): Promise<PutAuthEmailResponse> {
+}: UpdateEmailRequest): Promise<PutAuthEmailResponse> {
   return await fetchAPI<PutAuthEmailData, PutAuthEmailResponse>("PUT", "/auth/email", {
     body: {
       new_email: newEmail,
