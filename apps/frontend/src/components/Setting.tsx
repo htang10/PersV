@@ -31,7 +31,7 @@ export function Setting({ label, name, initial, onSave }: SettingProps) {
   }
 
   return (
-    <>
+    <div>
       <label htmlFor={name}>{label}</label>
 
       <input
@@ -54,6 +54,6 @@ export function Setting({ label, name, initial, onSave }: SettingProps) {
       ) : (
         <button onClick={() => setIsEditing(true)}>Edit</button>
       )}
-    </>
+    </div>
   );
 }
