@@ -47,7 +47,8 @@ export function NavigationBar() {
     <header>
       <nav>
         <Link to="/connect" rel="noopener noreferrer">
-          <img src="src/assets/logo.png" alt="Logo" width="100" height="100" />
+          {/* <img src="src/assets/logo.png" alt="Logo" width="100" height="100" /> */}
+          <span>PersV</span>
         </Link>
       </nav>
       <div ref={menuRef}>
