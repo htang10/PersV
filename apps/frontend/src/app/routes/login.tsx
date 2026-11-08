@@ -9,19 +9,19 @@ export function meta() {
 
 export default function Login() {
   const navigate = useNavigate();
+
   const { isAuthenticated } = useAuth();
+  const [email, setEmail] = useState<string>("");
+  const [emailSent, setEmailSent] = useState<boolean>(false);
 
   // Don't render login page if user is already logged in. Redirect to connect page
   useEffect(() => {
     if (isAuthenticated) {
       void navigate("/connect");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated]);
 
   if (isAuthenticated) return null;
-
-  const [email, setEmail] = useState<string>("");
-  const [emailSent, setEmailSent] = useState<boolean>(false);
 
   return (
     <div>
