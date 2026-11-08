@@ -146,6 +146,11 @@ export type HealthStatus = {
 };
 
 /**
+ * MailingPurpose
+ */
+export type MailingPurpose = 'login' | 'email_change' | 'account_deletion';
+
+/**
  * OTPLoginRequest
  *
  * Request payload for completing OTP authentication.
@@ -186,6 +191,10 @@ export type OtpRequest = {
      * The user's email address.
      */
     email: string;
+    /**
+     * The purpose of the OTP request.
+     */
+    purpose: MailingPurpose;
 };
 
 /**
