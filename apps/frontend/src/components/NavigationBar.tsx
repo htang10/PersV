@@ -12,6 +12,18 @@ export function NavigationBar() {
   const navigateNotice = useNavigateNotice();
   const [menuProfileOpen, setMenuProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const handleLogout = useMutation({
+    mutationFn: async () => {
+      setMenuProfileOpen(false); // close the menu immediately to avoid a flash of the menu after logout
+      await logout(); // server clears the HttpOnly refresh cookie
+    },
+    onSuccess: () => {
+      queryClient.clear(); // clear all cached queries to avoid showing stale data after logout
+      authTokenStore.expireSession();
+      setIsAuthenticated(false);
+      navigateNotice("/connect", { type: "info", message: "Logged out." });
+    },
+  });
 
   useEffect(() => {
     if (!menuProfileOpen) return;
@@ -30,19 +42,6 @@ export function NavigationBar() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [menuProfileOpen]);
-
-  const handleLogout = useMutation({
-    mutationFn: async () => {
-      setMenuProfileOpen(false); // close the menu immediately to avoid a flash of the menu after logout
-      await logout(); // server clears the HttpOnly refresh cookie
-    },
-    onSuccess: () => {
-      queryClient.clear(); // clear all cached queries to avoid showing stale data after logout
-      authTokenStore.expireSession();
-      setIsAuthenticated(false);
-      navigateNotice("/connect", { type: "info", message: "Logged out." });
-    },
-  });
 
   return (
     <header>
