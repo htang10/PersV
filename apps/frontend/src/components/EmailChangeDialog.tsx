@@ -1,4 +1,3 @@
-// src/components/EmailChangeDialog.tsx
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { updateEmail } from "@/services/auth";
@@ -36,8 +35,14 @@ export function EmailChangeDialog({
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (dialog && !dialog.open) dialog.showModal(); // guard: Strict Mode runs effects twice in dev
-  }, []);
+    if (dialog && !dialog.open && newEmail) dialog.showModal();
+  }, [newEmail]);
+
+  const handleCancel = () => {
+    onClose();
+    const dialog = dialogRef.current;
+    if (dialog && dialog.open) dialog.close();
+  };
 
   const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -46,7 +51,11 @@ export function EmailChangeDialog({
 
   return (
     <dialog ref={dialogRef} onClose={onClose}>
-      <h2>Verify email change</h2>
+      <h2>Verify email address</h2>
+      <p>
+        Please enter the codes sent to your new and current email address below. This step is to
+        verify that you have access to both email addresses before we update your account.
+      </p>
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="current-email-code">Code sent to {currentEmail}</label>
@@ -87,7 +96,7 @@ export function EmailChangeDialog({
         )}
 
         <div>
-          <button type="button" onClick={onClose}>
+          <button type="button" onClick={handleCancel}>
             Cancel
           </button>
           <button type="submit" disabled={verify.isPending}>
