@@ -14,7 +14,7 @@ export function OTPLoginForm({ initialEmail = "", onEmailSent }: OTPLoginProps) 
   const handleOTPEmail = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      const response = await sendOTP(event.target.email.value);
+      const response = await sendOTP({ email: event.target.email.value, purpose: "login" });
       // Email address is normalized upon successful request, hence we only update the final state of email
       onEmailSent(response.to);
     } catch (error) {

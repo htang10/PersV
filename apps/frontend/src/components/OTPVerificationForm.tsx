@@ -109,7 +109,7 @@ export function OTPVerificationForm({ targetEmail, onBackToLogin }: Verification
     event.preventDefault();
     const code = otp.join("");
     try {
-      const response = await login(targetEmail, code);
+      const response = await login({ email: targetEmail, otp: code });
       authTokenStore.setToken(response.token); // Keep track of user's access token for API requests
       setIsAuthenticated(true);
       setOTPError(null);
@@ -118,14 +118,14 @@ export function OTPVerificationForm({ targetEmail, onBackToLogin }: Verification
         message: "Logged in successfully.",
       });
     } catch {
-      setOTPError("Invallid or expired code");
+      setOTPError("Invalid or expired code");
       clearOTPInputs();
       inputRefs.current[0]?.focus();
     }
   };
 
   const handleOTPResend = async () => {
-    await sendOTP(targetEmail);
+    await sendOTP({ email: targetEmail, purpose: "login" });
     startResendCooldown();
   };
 
