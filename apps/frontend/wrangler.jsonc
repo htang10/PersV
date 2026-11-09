@@ -1,8 +1,13 @@
 {
-    "name": "persv-frontend",
-    "compatibility_date": "2026-11-08",
-    "assets": {
-        "directory": "./dist/client",
-        "not_found_handling": "single-page-application"
-    }
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "persv-frontend",
+  "upload_source_maps": true,
+  "compatibility_date": "2026-11-08",
+  "assets": {
+    "directory": "build/client",
+    "not_found_handling": "single-page-application",
+  },
+  "observability": {
+    "enabled": true,
+  },
 }
