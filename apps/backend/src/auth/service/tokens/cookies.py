@@ -37,7 +37,7 @@ def set_refresh_token_cookie(response: Response, refresh_token: str) -> None:
         max_age=REFRESH_TOKEN_EXP_SECONDS,
         secure=True,
         httponly=True,
-        samesite="strict",
+        samesite="none",
     )
 
 
@@ -54,5 +54,5 @@ def delete_refresh_token_cookie(response: Response) -> None:
         key=COOKIE_NAME,
         secure=True,
         httponly=True,
-        samesite="strict",
+        samesite="none",
     )
