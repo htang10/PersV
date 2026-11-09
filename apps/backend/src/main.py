@@ -76,7 +76,7 @@ app = FastAPI(
 origins = [
     "http://127.0.0.1:5173", # Local development
     "http://127.0.0.1:8787", # Production testing
-    "https://persv.persv-dev.workers.dev/connect" # Production URL
+    "https://persv.persv-dev.workers.dev" # Production URL
 ]
 
 app.add_middleware(
