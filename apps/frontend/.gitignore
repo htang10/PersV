@@ -13,6 +13,7 @@ lerna-debug.log*
 
 # Build
 node_modules
+build
 dist
 dist-ssr
 *.local
@@ -31,3 +32,8 @@ dist-ssr
 # React Router
 .react-router/
 .build/
+
+# Wrangler
+.wrangler
+.dev.vars*
+!.dev.vars.example
