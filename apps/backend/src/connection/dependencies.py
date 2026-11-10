@@ -35,7 +35,7 @@ def set_anon_id_cookie(response: Response, anon_id: str) -> None:
     response.set_cookie(
         key="anon_id",
         value=anon_id,
-        max_age=int(conn_settings.ANON_CONN_EXP.total_seconds()),
+        max_age=int(conn_settings.CONN_EXP.total_seconds()),
         secure=True,
         httponly=True,
         samesite="strict",
