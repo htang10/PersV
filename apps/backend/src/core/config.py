@@ -15,17 +15,14 @@ class Settings(BaseSettings):
     SERVER_PORT: int
 
     PG_DEMO_SCHEMA: str = "demo"
+    PG_DEMO_USER: str
+    PG_DEMO_PASSWORD: str
 
     PG_HOST: str
     PG_PORT: int
     PG_DATABASE: str
     PG_SSL_MODE: str | None = None
     PG_CHANNEL_BINDING: str | None = None
-
-    PG_DEMO_USER: str
-    PG_DEMO_PASSWORD: str
-    PG_AUTH_USER: str
-    PG_AUTH_PASSWORD: str
 
     REDIS_HOST: str
     REDIS_PORT: int
