@@ -1,5 +1,4 @@
 {
-  "packageManager": "pnpm@12.18.0",
   "name": "frontend",
   "private": true,
   "type": "module",
@@ -36,5 +35,6 @@
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "wrangler": "^4.158.0"
-  }
+  },
+  "packageManager": "pnpm@12.18.0"
 }
