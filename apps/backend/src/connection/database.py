@@ -13,8 +13,7 @@ from sqlalchemy import Engine, create_engine, make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.agent.builder import create_sql_agent
-from src.auth.service.identities import is_valid_anon_id
-from src.connection.config import pl_settings
+from src.connection.config import conn_settings
 from src.connection.exceptions import ConnectionNotFoundError, DBConfigError
 from src.connection.schemas import (
     CacheEntry,
@@ -30,18 +29,18 @@ from src.connection.schemas import (
 )
 from src.connection.utils import LRUCache
 from src.core.redis_client import redis_client
-from src.core.utils import get_current_datetime, get_sqlalchemy_url
+from src.core.utils import get_current_datetime, get_internal_db_url
 
 logger = logging.getLogger(__name__)
 
 DEMO_ENGINE = create_engine(
-    get_sqlalchemy_url(
-        username=pl_settings.PG_DEMO_USER, password=pl_settings.PG_DEMO_PASSWORD
+    get_internal_db_url(
+        username=conn_settings.PG_DEMO_USER, password=conn_settings.PG_DEMO_PASSWORD
     ),
     pool_pre_ping=True,
     pool_recycle=300,
 )
-DEMO_AGENT = create_sql_agent(engine=DEMO_ENGINE, schema=pl_settings.PG_DEMO_SCHEMA)
+DEMO_AGENT = create_sql_agent(engine=DEMO_ENGINE, schema=conn_settings.PG_DEMO_SCHEMA)
 
 
 class ConnectionKey:
@@ -59,7 +58,7 @@ class CustomDBConnectionManager:
             str, RLock
         ] = {}  # per-user locks that serialize cache mutations
         self.__connections: LRUCache[Engine, CompiledStateGraph] = LRUCache(
-            capacity=pl_settings.CACHE_CAPACITY
+            capacity=conn_settings.CACHE_CAPACITY
         )
 
     def connect(
@@ -89,14 +88,9 @@ class CustomDBConnectionManager:
                     ),
                     engine=engine,
                     agent=agent,
-                    ttl=pl_settings.AUTH_CONN_EXP,
+                    ttl=conn_settings.CONN_EXP,
                 )
             else:  # DEMO
-                ttl = (
-                    pl_settings.ANON_CONN_EXP
-                    if is_valid_anon_id(user_id)
-                    else pl_settings.AUTH_CONN_EXP
-                )
                 self.__test_connection(DEMO_ENGINE)
                 self.__commit_connection(
                     user_id=user_id,
@@ -104,7 +98,7 @@ class CustomDBConnectionManager:
                         db_schema=schema,
                         connected_at=get_current_datetime().isoformat(),
                     ),
-                    ttl=ttl,
+                    ttl=conn_settings.CONN_EXP,
                 )
 
     def disconnect(self, user_id: str) -> None:
@@ -118,12 +112,7 @@ class CustomDBConnectionManager:
 
     @staticmethod
     def reset_expiry(user_id: str) -> bool:
-        ttl = (
-            pl_settings.ANON_CONN_EXP
-            if is_valid_anon_id(user_id)
-            else pl_settings.AUTH_CONN_EXP
-        )
-        return redis_client.expire(ConnectionKey.for_user(user_id=user_id), ttl)
+        return redis_client.expire(ConnectionKey.for_user(user_id=user_id), conn_settings.CONN_EXP)
 
     def get_agent(self, user_id: str) -> CompiledStateGraph:
         agent = self.__get_cached_agent(user_id=user_id)
@@ -157,7 +146,7 @@ class CustomDBConnectionManager:
 
     def get_schema(self, user_id: str | None) -> str:
         if not user_id:
-            return pl_settings.PG_DEMO_SCHEMA
+            return conn_settings.PG_DEMO_SCHEMA
 
         record = self.get_connection(user_id)
         if not record:
@@ -277,7 +266,7 @@ class CustomDBConnectionManager:
         Returns:
             A base64-encoded string containing the nonce and ciphertext.
         """
-        key = base64.b64decode(pl_settings.ENCRYPTION_KEY)
+        key = base64.b64decode(conn_settings.ENCRYPTION_KEY)
         aesgcm = AESGCM(key)
         nonce = os.urandom(12)  # 96-bit nonce, required for GCM
         ciphertext = aesgcm.encrypt(nonce, url.encode(), None)
@@ -294,7 +283,7 @@ class CustomDBConnectionManager:
         Returns:
             The original plaintext connection URL.
         """
-        key = base64.b64decode(pl_settings.ENCRYPTION_KEY)
+        key = base64.b64decode(conn_settings.ENCRYPTION_KEY)
         aesgcm = AESGCM(key)
         data = base64.b64decode(encrypted)
         nonce = data[:12]

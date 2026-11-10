@@ -3,13 +3,13 @@ import logging
 import math
 from itertools import islice
 
-from src.connection.config import pl_settings
+from src.connection.config import conn_settings
 from src.connection.database import custom_conn_manager
 from src.core.redis_client import redis_client
 
 logger = logging.getLogger(__name__)
-PERIOD = pl_settings.CLEANUP_PERIOD
-THRESHOLD = pl_settings.CLEANUP_THRESHOLD
+PERIOD = conn_settings.CLEANUP_PERIOD
+THRESHOLD = conn_settings.CLEANUP_THRESHOLD
 
 
 async def sweep_stale_connections() -> None:
