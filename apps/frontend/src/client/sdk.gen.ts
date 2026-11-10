@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteConnectionData, DeleteConnectionErrors, DeleteConnectionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetConnectionStatusData, GetConnectionStatusErrors, GetConnectionStatusResponses, GetHealthData, GetHealthResponses, GetUsersMeData, GetUsersMeErrors, GetUsersMeResponses, PatchUsersMeData, PatchUsersMeErrors, PatchUsersMeResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutAllData, PostAuthLogoutAllErrors, PostAuthLogoutAllResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthOtpData, PostAuthOtpErrors, PostAuthOtpResponses, PostConnectionCustomData, PostConnectionCustomErrors, PostConnectionCustomResponses, PostConnectionDemoData, PostConnectionDemoErrors, PostConnectionDemoResponses, PostConnectionQueryData, PostConnectionQueryErrors, PostConnectionQueryResponses, PutAuthEmailData, PutAuthEmailErrors, PutAuthEmailResponses } from './types.gen';
+import type { DeleteConnectionData, DeleteConnectionErrors, DeleteConnectionResponses, GetConnectionStatusData, GetConnectionStatusErrors, GetConnectionStatusResponses, GetHealthData, GetHealthResponses, PostConnectionCustomData, PostConnectionCustomErrors, PostConnectionCustomResponses, PostConnectionDemoData, PostConnectionDemoErrors, PostConnectionDemoResponses, PostConnectionQueryData, PostConnectionQueryErrors, PostConnectionQueryResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -24,91 +24,11 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const _get_Health = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({ url: '/health', ...options });
 
 /**
- * Request a one-time password
- *
- * Sends a time-limited one-time password to the provided email address.
- * Use the returned code with `POST /auth/login` to authenticate.
- */
-export const _post_AuthOtp = <ThrowOnError extends boolean = false>(options: Options<PostAuthOtpData, ThrowOnError>): RequestResult<PostAuthOtpResponses, PostAuthOtpErrors, ThrowOnError> => (options.client ?? client).post<PostAuthOtpResponses, PostAuthOtpErrors, ThrowOnError>({
-    url: '/auth/otp',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Authenticate with a one-time password
- *
- * Verifies the code sent to the provided email.
- * Creates a new account if the email is unrecognized.
- * Generates authentication tokens on success.
- */
-export const _post_AuthLogin = <ThrowOnError extends boolean = false>(options: Options<PostAuthLoginData, ThrowOnError>): RequestResult<PostAuthLoginResponses, PostAuthLoginErrors, ThrowOnError> => (options.client ?? client).post<PostAuthLoginResponses, PostAuthLoginErrors, ThrowOnError>({
-    url: '/auth/login',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Validate the current session
- *
- * Validates the refresh token stored in the HTTP-only cookie.
- * If invalid or not present, user loses access to protected endpoints.
- */
-export const _get_AuthSession = <ThrowOnError extends boolean = false>(options?: Options<GetAuthSessionData, ThrowOnError>): RequestResult<GetAuthSessionResponses, GetAuthSessionErrors, ThrowOnError> => (options?.client ?? client).get<GetAuthSessionResponses, GetAuthSessionErrors, ThrowOnError>({ url: '/auth/session', ...options });
-
-/**
- * Revoke the current session
- *
- * Invalidates the refresh token stored in the HTTP-only cookie,
- * ending the current session. The client is responsible for discarding the access token.
- */
-export const _post_AuthLogout = <ThrowOnError extends boolean = false>(options?: Options<PostAuthLogoutData, ThrowOnError>): RequestResult<PostAuthLogoutResponses, PostAuthLogoutErrors, ThrowOnError> => (options?.client ?? client).post<PostAuthLogoutResponses, PostAuthLogoutErrors, ThrowOnError>({ url: '/auth/logout', ...options });
-
-/**
- * Revoke all sessions
- *
- * Invalidates all refresh tokens belonging to the user,
- * ending all sessions including the current one. The client is responsible
- * for discarding the access token.
- */
-export const _post_AuthLogoutAll = <ThrowOnError extends boolean = false>(options?: Options<PostAuthLogoutAllData, ThrowOnError>): RequestResult<PostAuthLogoutAllResponses, PostAuthLogoutAllErrors, ThrowOnError> => (options?.client ?? client).post<PostAuthLogoutAllResponses, PostAuthLogoutAllErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/auth/logout-all',
-    ...options
-});
-
-/**
- * Update the email address
- *
- * Changes the account email after verifying a code sent to both
- * the current and the new address. Generates new authentication tokens on success.
- */
-export const _put_AuthEmail = <ThrowOnError extends boolean = false>(options: Options<PutAuthEmailData, ThrowOnError>): RequestResult<PutAuthEmailResponses, PutAuthEmailErrors, ThrowOnError> => (options.client ?? client).put<PutAuthEmailResponses, PutAuthEmailErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/auth/email',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * Connect to the demo dataset
  *
  * Connect instantly to the built-in demo database. No credentials required.
  */
-export const _post_ConnectionDemo = <ThrowOnError extends boolean = false>(options?: Options<PostConnectionDemoData, ThrowOnError>): RequestResult<PostConnectionDemoResponses, PostConnectionDemoErrors, ThrowOnError> => (options?.client ?? client).post<PostConnectionDemoResponses, PostConnectionDemoErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/connection/demo',
-    ...options
-});
+export const _post_ConnectionDemo = <ThrowOnError extends boolean = false>(options?: Options<PostConnectionDemoData, ThrowOnError>): RequestResult<PostConnectionDemoResponses, PostConnectionDemoErrors, ThrowOnError> => (options?.client ?? client).post<PostConnectionDemoResponses, PostConnectionDemoErrors, ThrowOnError>({ url: '/connection/demo', ...options });
 
 /**
  * Connect to a custom database
@@ -116,7 +36,6 @@ export const _post_ConnectionDemo = <ThrowOnError extends boolean = false>(optio
  * Establish a database connection using the provided credentials.
  */
 export const _post_ConnectionCustom = <ThrowOnError extends boolean = false>(options: Options<PostConnectionCustomData, ThrowOnError>): RequestResult<PostConnectionCustomResponses, PostConnectionCustomErrors, ThrowOnError> => (options.client ?? client).post<PostConnectionCustomResponses, PostConnectionCustomErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/connection/custom',
     ...options,
     headers: {
@@ -130,22 +49,14 @@ export const _post_ConnectionCustom = <ThrowOnError extends boolean = false>(opt
  *
  * Identify whether an active database connection is currently established.
  */
-export const _get_ConnectionStatus = <ThrowOnError extends boolean = false>(options?: Options<GetConnectionStatusData, ThrowOnError>): RequestResult<GetConnectionStatusResponses, GetConnectionStatusErrors, ThrowOnError> => (options?.client ?? client).get<GetConnectionStatusResponses, GetConnectionStatusErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/connection/status',
-    ...options
-});
+export const _get_ConnectionStatus = <ThrowOnError extends boolean = false>(options?: Options<GetConnectionStatusData, ThrowOnError>): RequestResult<GetConnectionStatusResponses, GetConnectionStatusErrors, ThrowOnError> => (options?.client ?? client).get<GetConnectionStatusResponses, GetConnectionStatusErrors, ThrowOnError>({ url: '/connection/status', ...options });
 
 /**
  * Disconnect from the database
  *
  * Terminate the active database connection and clear the associated session state.
  */
-export const _delete_Connection = <ThrowOnError extends boolean = false>(options?: Options<DeleteConnectionData, ThrowOnError>): RequestResult<DeleteConnectionResponses, DeleteConnectionErrors, ThrowOnError> => (options?.client ?? client).delete<DeleteConnectionResponses, DeleteConnectionErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/connection',
-    ...options
-});
+export const _delete_Connection = <ThrowOnError extends boolean = false>(options?: Options<DeleteConnectionData, ThrowOnError>): RequestResult<DeleteConnectionResponses, DeleteConnectionErrors, ThrowOnError> => (options?.client ?? client).delete<DeleteConnectionResponses, DeleteConnectionErrors, ThrowOnError>({ url: '/connection', ...options });
 
 /**
  * Query the database
@@ -153,30 +64,7 @@ export const _delete_Connection = <ThrowOnError extends boolean = false>(options
  * Ask a question in plain English and get an answer drawn directly from your data.
  */
 export const _post_ConnectionQuery = <ThrowOnError extends boolean = false>(options: Options<PostConnectionQueryData, ThrowOnError>): RequestResult<PostConnectionQueryResponses, PostConnectionQueryErrors, ThrowOnError> => (options.client ?? client).post<PostConnectionQueryResponses, PostConnectionQueryErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/connection/query',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Read Profile
- */
-export const _get_UsersMe = <ThrowOnError extends boolean = false>(options?: Options<GetUsersMeData, ThrowOnError>): RequestResult<GetUsersMeResponses, GetUsersMeErrors, ThrowOnError> => (options?.client ?? client).get<GetUsersMeResponses, GetUsersMeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users/me',
-    ...options
-});
-
-/**
- * Update Profile
- */
-export const _patch_UsersMe = <ThrowOnError extends boolean = false>(options: Options<PatchUsersMeData, ThrowOnError>): RequestResult<PatchUsersMeResponses, PatchUsersMeErrors, ThrowOnError> => (options.client ?? client).patch<PatchUsersMeResponses, PatchUsersMeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users/me',
     ...options,
     headers: {
         'Content-Type': 'application/json',

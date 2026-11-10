@@ -5,37 +5,13 @@ export type ClientOptions = {
 };
 
 /**
- * AuthResponse
- *
- * Authentication credentials issued by the server.
- *
- * Attributes:
- * token: Short-lived JWT access token used for API authentication.
- * type: Authentication scheme used in the Authorization header.
- */
-export type AuthResponse = {
-    /**
-     * Token
-     *
-     * Short-lived JWT access token used for API authentication.
-     */
-    token: string;
-    /**
-     * Type
-     *
-     * Authentication scheme used in the Authorization header.
-     */
-    type?: string;
-};
-
-/**
  * ConnectionConfig
  *
  * Database connection parameters provided by the user.
  */
 export type ConnectionConfig = {
     /**
-     * The database management system hosting the target database. Defaults to PostgreSQL.
+     * The database management system hosting the target database.
      */
     dbms?: Dbms;
     /**
@@ -43,35 +19,41 @@ export type ConnectionConfig = {
      *
      * The username used to authenticate with the database server.
      */
-    username: string;
+    username?: string | null;
     /**
      * Password
      *
      * The password used to authenticate with the database server.
      */
-    password: string;
+    password?: string | null;
     /**
      * Host
      *
      * The hostname or IP address of the database server.
      */
-    host: string;
+    host?: string | null;
     /**
      * Port
      *
      * The port number the database server is listening on.
      */
-    port: number;
+    port?: number | null;
     /**
      * Db
      *
      * The name of the database to connect to.
      */
-    db: string;
+    db?: string | null;
+    /**
+     * Db Path
+     *
+     * The filesystem path to the SQLite database file.
+     */
+    db_path?: string | null;
     /**
      * Schema
      *
-     * The schema to set as the search path. Only applicable to database systems that support schemas,such as PostgreSQL. Leave empty for others.
+     * The schema to use when connecting to the database.
      */
     schema?: string | null;
 };
@@ -100,30 +82,6 @@ export type ConnectionStatus = {
 export type Dbms = 'postgresql' | 'mysql' | 'mariadb' | 'sqlite' | 'oracle' | 'mssql';
 
 /**
- * EmailChangeRequest
- */
-export type EmailChangeRequest = {
-    /**
-     * New Email
-     *
-     * The email address to switch to.
-     */
-    new_email: string;
-    /**
-     * New Email Code
-     *
-     * The 6-digit one-time password sent to the new email address.
-     */
-    new_email_code: string;
-    /**
-     * Current Email Code
-     *
-     * The 6-digit one-time password sent to the current email address the account is registered with.
-     */
-    current_email_code: string;
-};
-
-/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -143,94 +101,6 @@ export type HealthStatus = {
      * Status
      */
     status: string;
-};
-
-/**
- * MailingPurpose
- */
-export type MailingPurpose = 'login' | 'email_change' | 'account_deletion';
-
-/**
- * OTPLoginRequest
- *
- * Request payload for completing OTP authentication.
- *
- * Attributes:
- * email: The user's email address.
- * Automatically validated and normalized.
- * code: The 6-digit one-time password sent to the user's email.
- */
-export type OtpLoginRequest = {
-    /**
-     * Email
-     *
-     * The user's email address.
-     */
-    email: string;
-    /**
-     * Code
-     *
-     * The 6-digit one-time password sent to the user's email.
-     */
-    code: string;
-};
-
-/**
- * OTPRequest
- *
- * Request payload for initiating OTP authentication.
- *
- * Attributes:
- * email: The user's email address.
- * Automatically validated and normalized.
- */
-export type OtpRequest = {
-    /**
-     * Email
-     *
-     * The user's email address.
-     */
-    email: string;
-    /**
-     * The purpose of the OTP request.
-     */
-    purpose: MailingPurpose;
-};
-
-/**
- * OTPResponse
- *
- * Response returned after an OTP code is generated and sent.
- *
- * Attributes:
- * to: The recipient's email address. Included for confirmation only.
- * expires_in: The number of seconds until the OTP code expires.
- */
-export type OtpResponse = {
-    /**
-     * To
-     *
-     * The email address to which the OTP code will be sent.
-     */
-    to: string;
-    /**
-     * Expires In
-     *
-     * Seconds until the OTP code expires.
-     */
-    expires_in: number;
-};
-
-/**
- * ProfileChangesResponse
- */
-export type ProfileChangesResponse = {
-    /**
-     * Updated Display Name
-     *
-     * Updated display name after reformatting.
-     */
-    updated_display_name?: string | null;
 };
 
 /**
@@ -265,50 +135,6 @@ export type QueryResponse = {
      * The SQL query that was generated and executed to get the result.
      */
     sql: string;
-};
-
-/**
- * SessionValidationResponse
- *
- * Response indicating whether the current authentication session is valid.
- */
-export type SessionValidationResponse = {
-    /**
-     * Valid
-     *
-     * Whether the current authentication session is valid.
-     */
-    valid: boolean;
-};
-
-/**
- * UserProfile
- */
-export type UserProfile = {
-    /**
-     * Email
-     *
-     * The email address that the user registered with.
-     */
-    email: string;
-    /**
-     * Display Name
-     *
-     * The display name that the user set.
-     */
-    display_name: string;
-};
-
-/**
- * UserProfileUpdate
- */
-export type UserProfileUpdate = {
-    /**
-     * New Display Name
-     *
-     * New display name. Length restrictions must be met.
-     */
-    new_display_name?: string | null;
 };
 
 /**
@@ -354,156 +180,6 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
-
-export type PostAuthOtpData = {
-    body: OtpRequest;
-    path?: never;
-    query?: never;
-    url: '/auth/otp';
-};
-
-export type PostAuthOtpErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PostAuthOtpError = PostAuthOtpErrors[keyof PostAuthOtpErrors];
-
-export type PostAuthOtpResponses = {
-    /**
-     * Successful Response
-     */
-    200: OtpResponse;
-};
-
-export type PostAuthOtpResponse = PostAuthOtpResponses[keyof PostAuthOtpResponses];
-
-export type PostAuthLoginData = {
-    body: OtpLoginRequest;
-    path?: never;
-    query?: never;
-    url: '/auth/login';
-};
-
-export type PostAuthLoginErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PostAuthLoginError = PostAuthLoginErrors[keyof PostAuthLoginErrors];
-
-export type PostAuthLoginResponses = {
-    /**
-     * Successful Response
-     */
-    200: AuthResponse;
-};
-
-export type PostAuthLoginResponse = PostAuthLoginResponses[keyof PostAuthLoginResponses];
-
-export type GetAuthSessionData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/auth/session';
-};
-
-export type GetAuthSessionErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetAuthSessionError = GetAuthSessionErrors[keyof GetAuthSessionErrors];
-
-export type GetAuthSessionResponses = {
-    /**
-     * Successful Response
-     */
-    200: SessionValidationResponse;
-};
-
-export type GetAuthSessionResponse = GetAuthSessionResponses[keyof GetAuthSessionResponses];
-
-export type PostAuthLogoutData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/auth/logout';
-};
-
-export type PostAuthLogoutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PostAuthLogoutError = PostAuthLogoutErrors[keyof PostAuthLogoutErrors];
-
-export type PostAuthLogoutResponses = {
-    /**
-     * Successful Response
-     */
-    204: void;
-};
-
-export type PostAuthLogoutResponse = PostAuthLogoutResponses[keyof PostAuthLogoutResponses];
-
-export type PostAuthLogoutAllData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/auth/logout-all';
-};
-
-export type PostAuthLogoutAllErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PostAuthLogoutAllError = PostAuthLogoutAllErrors[keyof PostAuthLogoutAllErrors];
-
-export type PostAuthLogoutAllResponses = {
-    /**
-     * Successful Response
-     */
-    204: void;
-};
-
-export type PostAuthLogoutAllResponse = PostAuthLogoutAllResponses[keyof PostAuthLogoutAllResponses];
-
-export type PutAuthEmailData = {
-    body: EmailChangeRequest;
-    path?: never;
-    query?: never;
-    url: '/auth/email';
-};
-
-export type PutAuthEmailErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PutAuthEmailError = PutAuthEmailErrors[keyof PutAuthEmailErrors];
-
-export type PutAuthEmailResponses = {
-    /**
-     * Successful Response
-     */
-    200: AuthResponse;
-};
-
-export type PutAuthEmailResponse = PutAuthEmailResponses[keyof PutAuthEmailResponses];
 
 export type PostConnectionDemoData = {
     body?: never;
@@ -627,53 +303,3 @@ export type PostConnectionQueryResponses = {
 };
 
 export type PostConnectionQueryResponse = PostConnectionQueryResponses[keyof PostConnectionQueryResponses];
-
-export type GetUsersMeData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/users/me';
-};
-
-export type GetUsersMeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetUsersMeError = GetUsersMeErrors[keyof GetUsersMeErrors];
-
-export type GetUsersMeResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserProfile;
-};
-
-export type GetUsersMeResponse = GetUsersMeResponses[keyof GetUsersMeResponses];
-
-export type PatchUsersMeData = {
-    body: UserProfileUpdate;
-    path?: never;
-    query?: never;
-    url: '/users/me';
-};
-
-export type PatchUsersMeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PatchUsersMeError = PatchUsersMeErrors[keyof PatchUsersMeErrors];
-
-export type PatchUsersMeResponses = {
-    /**
-     * Successful Response
-     */
-    200: ProfileChangesResponse;
-};
-
-export type PatchUsersMeResponse = PatchUsersMeResponses[keyof PatchUsersMeResponses];
