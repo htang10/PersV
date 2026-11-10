@@ -8,7 +8,6 @@ const ERROR_MESSAGES = {
 const API_ERROR_DEFAULTS: Record<number, string> = {
   0: "Network failure. Please check your connection.",
   400: "Bad request. Please check your input and try again.",
-  401: "Unauthorized access. Your session may have expired. Please log in again.",
   429: "Too many attempts. Please wait a moment and try again.",
 };
 
