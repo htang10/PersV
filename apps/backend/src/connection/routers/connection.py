@@ -3,14 +3,15 @@ import logging
 from fastapi import HTTPException, status
 from fastapi.routing import APIRouter
 
-from src.auth.dependencies import AuthUserId, CurrentUserId, OptionalUserId
-from src.connection.config import pl_settings
+from src.connection.config import conn_settings
 from src.connection.database import custom_conn_manager
+from src.connection.dependencies import UserId
 from src.connection.exceptions import (
     ConnectionNotFoundError,
     DBConfigError,
 )
 from src.connection.schemas import ConnectionConfig, ConnectionStatus
+from src.connection.utils import build_database_url
 from src.core.responses import APIResponse
 
 logger = logging.getLogger(__name__)
@@ -23,9 +24,11 @@ router = APIRouter()
     description="Connect instantly to the built-in demo database. No credentials required.",
     response_model=ConnectionStatus,
 )
-def connect_demo(user_id: CurrentUserId):
+def connect_demo(user_id: UserId):
     try:
-        custom_conn_manager.connect(user_id=user_id, schema=pl_settings.PG_DEMO_SCHEMA)
+        custom_conn_manager.connect(
+            user_id=user_id, schema=conn_settings.PG_DEMO_SCHEMA
+        )
         return ConnectionStatus(connected=True, database="demo")
     except DBConfigError:
         raise HTTPException(
@@ -40,15 +43,15 @@ def connect_demo(user_id: CurrentUserId):
     description="Establish a database connection using the provided credentials.",
     response_model=ConnectionStatus,
 )
-def connect(config: ConnectionConfig, user_id: AuthUserId):
-    url = f"{config.dbms.scheme}://{config.username}:{config.password}@{config.host}:{config.port}/{config.db}"
+def connect(config: ConnectionConfig, user_id: UserId):
+    url = build_database_url(config=config)
     try:
         custom_conn_manager.connect(
             user_id=user_id,
             schema=config.db_schema,
             url=url,
         )
-        return ConnectionStatus(connected=True, database=config.db)
+        return ConnectionStatus(connected=True, database=config.db or config.db_path)
     except DBConfigError:
         raise HTTPException(
             detail="Could not connect to database. Check your credentials and try again.",
@@ -62,7 +65,7 @@ def connect(config: ConnectionConfig, user_id: AuthUserId):
     description="Identify whether an active database connection is currently established.",
     response_model=ConnectionStatus,
 )
-def is_connected(user_id: OptionalUserId):
+def is_connected(user_id: UserId):
     return custom_conn_manager.get_connection_status(user_id=user_id)
 
 
@@ -71,7 +74,7 @@ def is_connected(user_id: OptionalUserId):
     summary="Disconnect from the database",
     description="Terminate the active database connection and clear the associated session state.",
 )
-def disconnect(response: APIResponse, user_id: OptionalUserId):
+def disconnect(response: APIResponse, user_id: UserId):
     try:
         # Terminate connection
         custom_conn_manager.disconnect(user_id=user_id)

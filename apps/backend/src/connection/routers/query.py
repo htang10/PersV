@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, status
 
 from src.agent.executor import generate_response
 from src.agent.schemas import QueryResponse
-from src.auth.dependencies import OptionalUserId
-from src.auth.service.identities import is_valid_anon_id, set_anon_id_cookie
 from src.connection.database import custom_conn_manager
+from src.connection.dependencies import UserId
 from src.connection.exceptions import AgentError
 from src.connection.schemas import QueryRequest
 
@@ -17,7 +16,7 @@ router = APIRouter()
     description="Ask a question in plain English and get an answer drawn directly from your data.",
     response_model=QueryResponse,
 )
-async def query(user_id: OptionalUserId, request: QueryRequest, response: Response):
+async def query(user_id: UserId, request: QueryRequest):
     # If successful, reset the connection expiry for user every time they query
     if not user_id or not custom_conn_manager.reset_expiry(user_id=user_id):
         raise HTTPException(
@@ -26,10 +25,6 @@ async def query(user_id: OptionalUserId, request: QueryRequest, response: Respon
         )
 
     try:
-        if is_valid_anon_id(user_id):
-            set_anon_id_cookie(
-                response, anon_id=user_id
-            )  # Also resets expiry for existing valid anonymous session
         return await generate_response(prompt=request.prompt, user_id=user_id)
     except AgentError:
         raise HTTPException(
