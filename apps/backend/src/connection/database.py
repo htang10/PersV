@@ -112,7 +112,9 @@ class CustomDBConnectionManager:
 
     @staticmethod
     def reset_expiry(user_id: str) -> bool:
-        return redis_client.expire(ConnectionKey.for_user(user_id=user_id), conn_settings.CONN_EXP)
+        return redis_client.expire(
+            ConnectionKey.for_user(user_id=user_id), conn_settings.CONN_EXP
+        )
 
     def get_agent(self, user_id: str) -> CompiledStateGraph:
         agent = self.__get_cached_agent(user_id=user_id)
