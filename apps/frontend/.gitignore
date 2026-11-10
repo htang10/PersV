@@ -1,6 +1,7 @@
 # Environment variables
 .env.development
 .env.production
+.env.staging
 
 # Logs
 logs
