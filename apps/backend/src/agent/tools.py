@@ -26,7 +26,7 @@ _DISALLOWED_NODES = (
 
 
 def create_tools(
-    engine: Engine, schema: str, schema_summary: dict[str, dict[str, str]]
+    engine: Engine, schema: str, schema_summary: dict[str, object]
 ) -> tuple[list, str]:
     """Builds the LangChain tools the SQL agent uses to explore data and run queries.
 
