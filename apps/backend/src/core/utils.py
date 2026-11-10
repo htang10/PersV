@@ -13,7 +13,7 @@ def read_text_file(file_path: str | Path) -> str:
     return Path(file_path).read_text(encoding="utf-8")
 
 
-def get_sqlalchemy_url(
+def get_internal_db_url(
     username: str,
     password: str,
     host: str = settings.PG_HOST,
@@ -44,19 +44,6 @@ def get_redis_url(
     db: int = 0,
     use_tls: bool = False,
 ) -> str:
-    """Builds a Redis connection URL from individual components.
-
-    Args:
-        host: Redis server hostname or IP.
-        port: Redis server port.
-        username: Optional username for Redis ACL auth.
-        password: Optional password for Redis auth.
-        db: Redis logical database index.
-        use_tls: Whether to use the `rediss://` (TLS) scheme instead of `redis://`.
-
-    Returns:
-        A fully formed Redis connection URL.
-    """
     scheme = "rediss" if use_tls else "redis"
 
     auth = ""
