@@ -4,7 +4,6 @@ from redis.exceptions import ConnectionError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.auth.dependencies import AUTH_ENGINE
 from src.connection.database import DEMO_ENGINE
 from src.core.redis_client import redis_client
 from src.core.schemas import HealthStatus
@@ -14,10 +13,6 @@ logger = logging.getLogger(__name__)
 
 def check_database() -> bool:
     logger.info("Checking database...")
-    with Session(AUTH_ENGINE) as session:
-        if not session.execute(select(1)):
-            return False
-
     with Session(DEMO_ENGINE) as session:
         if not session.execute(select(1)):
             return False
