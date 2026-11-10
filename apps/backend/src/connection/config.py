@@ -17,4 +17,4 @@ class ConnectionSettings(Settings):
     }
 
 
-conn_settings = ConnectionSettings  # type: ignore
+conn_settings = ConnectionSettings()  # type: ignore
