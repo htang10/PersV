@@ -1,7 +1,9 @@
 import { useState, Activity } from "react";
 import type { ConnectionConfig, Dbms } from "@/client";
+import { useMutation } from "@tanstack/react-query";
 import { errorMessage } from "@/errors/error-message";
 import { connectCustom, connectDemo } from "@/services/connection";
+import { CustomConnectionFields } from "@/components";
 
 type ConnectionType = "demo" | "custom";
 
@@ -9,37 +11,59 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
   const [connectionType, setConnectionType] = useState<ConnectionType>("demo");
   const [connError, setConnError] = useState<string | null>(null);
 
-  const handleConnection = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  const connection = useMutation({
+    mutationFn: (config: ConnectionConfig | null) =>
+      config ? connectCustom(config) : connectDemo(),
+    onSuccess: () => {
+      setConnError(null);
+      onConnected();
+    },
+    onError: (error) => setConnError(errorMessage(error)),
+  });
+
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    try {
-      if (connectionType === "demo") {
-        await connectDemo();
-      } else {
-        const formData = new FormData(event.currentTarget);
-        const customPayload: ConnectionConfig = {
-          dbms: formData.get("dbms") as Dbms,
-          username: formData.get("username") as string,
-          password: formData.get("password") as string,
-          host: formData.get("host") as string,
-          port: parseInt(formData.get("port") as string, 10) as number,
-          db: formData.get("database") as string,
-          schema: (formData.get("schema") as string) || undefined,
-        };
-        await connectCustom(customPayload);
-      }
-      setConnError(null); // Clear any previous connection errors
-      onConnected(); // Call the onConnected callback after successful connection
-    } catch (error) {
-      setConnError(errorMessage(error));
+    setConnError(null); // Clear previous error message
+
+    if (connectionType === "demo") {
+      connection.mutate(null);
+      return;
     }
+
+    const formData = new FormData(event.currentTarget);
+    const field = (name: string) => {
+      const value = formData.get(name);
+      return typeof value === "string" ? value : "";
+    };
+
+    const dbms = field("dbms") as Dbms;
+
+    if (dbms === "sqlite") {
+      setConnError("SQLite upload isn't supported yet.");
+      return;
+    }
+
+    const port = Number(formData.get("port"));
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      setConnError("Port must be between 1 and 65535.");
+      return;
+    }
+
+    connection.mutate({
+      dbms,
+      username: field("username"),
+      password: field("password"),
+      host: field("host"),
+      port,
+      db: field("database"),
+      schema: field("schema") || undefined,
+    });
   };
 
   return (
     <div>
-      <Activity mode={connError ? "visible" : "hidden"}>
-        <p>{connError}</p>
-      </Activity>
-      <form onSubmit={handleConnection}>
+      {connError && <p role="alert">{connError}</p>}
+      <form onSubmit={handleSubmit}>
         <input
           type="radio"
           name="connection"
@@ -61,60 +85,11 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
         <label htmlFor="custom">Custom</label>
         <br />
         <Activity mode={connectionType === "custom" ? "visible" : "hidden"}>
-          <fieldset disabled={connectionType !== "custom"}>
-            <div>
-              <label htmlFor="dbms">DBMS: </label>
-              <select name="dbms" id="dbms" required>
-                <option value="postgresql">PostgreSQL</option>
-                <option value="mysql">MySQL</option>
-                <option value="mariadb">MariaDB</option>
-                <option value="sqlite">SQLite</option>
-                <option value="oracle">Oracle</option>
-                <option value="mssql">Microsoft SQL Server</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="username">Username: </label>
-              <input type="text" name="username" id="username" required />
-            </div>
-            <div>
-              <label htmlFor="password">Password: </label>
-              <input type="password" name="password" id="password" required />
-            </div>
-            <div>
-              <label htmlFor="host">Host: </label>
-              <input type="text" name="host" id="host" required />
-            </div>
-            <div>
-              <label htmlFor="port">Port: </label>
-              <input
-                type="text"
-                name="port"
-                id="port"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                onChange={(e) => {
-                  e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "");
-                }} // Only allow numeric input
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="database">Database: </label>
-              <input type="text" name="database" id="database" required />
-            </div>
-            <div>
-              <label htmlFor="schema">Schema: </label>
-              <input
-                type="text"
-                name="schema"
-                id="schema"
-                placeholder="Leave blank if not applicable"
-              />
-            </div>
-          </fieldset>
+          <CustomConnectionFields disabled={connectionType !== "custom"} />
         </Activity>
-        <button type="submit">Connect</button>
+        <button type="submit" disabled={connection.isPending}>
+          {connection.isPending ? "Connecting..." : "Connect"}
+        </button>
       </form>
     </div>
   );
