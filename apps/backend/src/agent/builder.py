@@ -53,7 +53,7 @@ def create_sql_agent(engine: Engine, schema: str) -> CompiledStateGraph:
     )
 
 
-def _build_schema_summary(engine: Engine, schema: str) -> dict[str, dict[str, str]]:
+def _build_schema_summary(engine: Engine, schema: str) -> dict[str, object]:
     """Inspects the database schema and build a mapping of tables to their columns and types.
 
     Args:
