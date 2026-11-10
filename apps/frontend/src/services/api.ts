@@ -1,6 +1,5 @@
 import { API_URL } from "@/config";
 import { APIError, MalformedJSON } from "@/errors/error-type";
-import { authTokenStore } from "@/services/token";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RequestOptions<TRequest> = TRequest extends { body: infer B } ? { body: B } : { body?: never };
@@ -18,7 +17,6 @@ export async function fetchAPI<TRequest extends { url: string }, TResponse>(
 ): Promise<TResponse> {
   const options = (args[0] ?? {}) as RequestOptions<TRequest>;
   const payload = "body" in options ? JSON.stringify(options.body) : undefined;
-  const accessToken = authTokenStore.getToken();
 
   let response: Response;
 
@@ -27,17 +25,10 @@ export async function fetchAPI<TRequest extends { url: string }, TResponse>(
       method,
       headers: {
         "Content-Type": "application/json",
-        ...(accessToken && {
-          Authorization: `Bearer ${accessToken}`,
-        }),
       },
       body: payload,
       credentials: "include",
     });
-    const newAccessToken = response.headers.get("X-New-Access-Token");
-    if (newAccessToken) {
-      authTokenStore.setToken(newAccessToken);
-    }
   } catch {
     throw new APIError(0); // Usually network error
   }
