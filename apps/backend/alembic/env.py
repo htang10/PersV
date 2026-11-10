@@ -7,13 +7,12 @@ from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from src.auth.models import AuthBase
 from src.connection.models import DemoBase
-from src.core.utils import get_sqlalchemy_url
+from src.core.utils import get_internal_db_url
 
 load_dotenv(f".env.{os.getenv('ENVIRONMENT', 'development')}")
 
-sqlalchemy_url = get_sqlalchemy_url(
+sqlalchemy_url = get_internal_db_url(
     username=str(os.getenv("PG_MIGRATION_USER")),
     password=str(os.getenv("PG_MIGRATION_PASSWORD")),
 )
@@ -28,7 +27,7 @@ config.set_main_option("sqlalchemy.url", sqlalchemy_url)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = [AuthBase.metadata, DemoBase.metadata]
+target_metadata = [DemoBase.metadata]
 
 
 def include_object(
