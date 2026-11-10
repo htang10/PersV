@@ -1,122 +1,104 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { PostConnectionQueryResponse } from "@/client";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { errorMessage } from "@/errors/error-message";
 import { useNavigateNotice } from "@/hooks/useNavigateNotice";
 import { checkConnStatus, disconnect, query } from "@/services/connection";
 
 export function QueryInterface() {
   const navigateNotice = useNavigateNotice();
+  const queryClient = useQueryClient();
 
-  const [checking, setChecking] = useState<boolean>(true);
-  const [connectedDB, setConnectedDB] = useState<string | null | undefined>(null);
   const [prompt, setPrompt] = useState<string>("");
-  const [processing, setProcessing] = useState<boolean>(false);
-  const [queryResult, setQueryResult] = useState<PostConnectionQueryResponse | null>(null);
-  const [queryError, setQueryError] = useState<string | null>(null);
 
-  const checkConnection = async (): Promise<boolean> => {
-    try {
-      const connStatus = await checkConnStatus();
-
-      if (!connStatus.connected) {
-        navigateNotice("/connect", {
-          type: "error",
-          message:
-            "Not connected to any database yet or session expired due to inactivity. Please establish a database connection in order to query.",
-        });
-
-        return false;
-      }
-      setChecking(false);
-      setConnectedDB(connStatus.database);
-
-      return connStatus.connected;
-    } catch (error) {
-      navigateNotice("/connect", {
-        type: "error",
-        message: errorMessage(error),
-      });
-
-      return false;
-    }
-  };
+  const status = useQuery({
+    queryKey: ["connection-status"],
+    queryFn: checkConnStatus,
+    staleTime: 0, // always treat as stale, so every focus or mount re-checks
+    gcTime: 0, // drop the cache on unmount, so a stale "connected" is never shown on re-entry
+    retry: false,
+  });
 
   useEffect(() => {
-    void checkConnection();
-  }, []);
-
-  // Don't render the query page until the connection check completes
-  if (checking) {
-    return null;
-  }
-
-  const handleQuery = async (event: React.SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    // Re-check in case the connection expired since the last check
-    const connected = await checkConnection();
-    if (!connected) return;
-
-    setProcessing(true);
-
-    try {
-      const result = await query(prompt);
-      setQueryResult(result);
-      setQueryError(null);
-    } catch (error) {
-      setQueryError(
-        errorMessage(error, {
-          400: "An unexpected error occurred. Please reconnect to the database and try again.",
-        }),
-      );
-      setQueryResult(null);
-    } finally {
-      setProcessing(false);
+    /*
+      Only redirect users if they failed to connect, meaning data wasn't returned.
+      A network error can potentially trigger before a request even succeeds due to focus refetching.
+    */
+    if (status.isError && !status.data) {
+      navigateNotice("/connect", { type: "error", message: errorMessage(status.error) });
+    } else if (status.data && !status.data.connected) {
+      navigateNotice("/connect", {
+        type: "error",
+        message: "Not connected to any database yet or the session expired. Please connect first.",
+      });
     }
+  }, [status.isError, status.error, status.data]);
+
+  const queryMutation = useMutation({
+    mutationFn: query,
+    // a failed query may mean the connection expired: re-check, and the effect above redirects if so
+    onError: () => queryClient.invalidateQueries({ queryKey: ["connection-status"] }),
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: disconnect,
+    onSuccess: () =>
+      navigateNotice("/connect", { type: "info", message: "Disconnected from the database." }),
+  });
+
+  if (!status.data?.connected) return null; // pending, error, or not connected: the effect redirects
+
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    queryMutation.mutate(prompt);
   };
 
-  const handleDisconnect = async () => {
-    await disconnect();
-    navigateNotice("/connect", {
-      type: "info",
-      message: "Disconnected from the database.",
-    });
-  };
   return (
     <div>
-      {connectedDB ? (
-        <span>Connected to {connectedDB}</span>
-      ) : (
-        <span>Not connected to any database</span>
-      )}
-      <form onSubmit={handleQuery} onReset={handleDisconnect}>
+      <span>Connected to {status.data.database}</span>
+      <form onSubmit={handleSubmit}>
         <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={1} required />
         <div>
-          <button type="submit">Query</button>
-          <button type="reset">Disconnect</button>
+          <button type="submit" disabled={queryMutation.isPending}>
+            Query
+          </button>
+          <button
+            type="button"
+            onClick={() => disconnectMutation.mutate()}
+            disabled={disconnectMutation.isPending}
+          >
+            Disconnect
+          </button>
         </div>
       </form>
-      {processing && <p>Processing...</p>}
-      {queryError && <p>{queryError}</p>}
-      {queryResult && (
+
+      {queryMutation.isPending && <p aria-live="polite">Processing...</p>}
+      {queryMutation.error && (
+        <p role="alert">
+          {errorMessage(queryMutation.error, {
+            400: "An unexpected error occurred. Please reconnect to the database and try again.",
+          })}
+        </p>
+      )}
+      {disconnectMutation.error && <p role="alert">{errorMessage(disconnectMutation.error)}</p>}
+      {queryMutation.data && (
         <div>
           <section>
             <p>
               <b>Result:</b>
             </p>
             <div className="query-result">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{queryResult.result}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{queryMutation.data.result}</ReactMarkdown>
             </div>
           </section>
           <section>
             <p>
               <b>SQL:</b>
             </p>
-            {queryResult.sql ? (
+            {queryMutation.data.sql ? (
               <pre>
-                <code>{queryResult.sql}</code>
+                <code>{queryMutation.data.sql}</code>
               </pre>
             ) : (
               <p>None</p>
