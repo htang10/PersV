@@ -2,7 +2,33 @@ from collections import OrderedDict
 from types import MappingProxyType
 from typing import Generic
 
-from src.connection.schemas import AgentT, CacheEntry, EngineT
+from sqlalchemy.engine import URL
+
+from src.connection.schemas import DBMS, AgentT, CacheEntry, ConnectionConfig, EngineT
+
+
+def build_database_url(config: ConnectionConfig) -> URL | str:
+    if config.dbms == DBMS.SQLITE:
+        return f"sqlite:///{config.db_path}"
+
+    if config.dbms == DBMS.ORACLE and config.db:
+        return URL.create(
+            drivername=config.dbms.scheme,
+            username=config.username,
+            password=config.password,
+            host=config.host,
+            port=config.port,
+            query={"service_name": config.db},
+        )
+
+    return URL.create(
+        drivername=config.dbms.scheme,
+        username=config.username,
+        password=config.password,
+        host=config.host,
+        port=config.port,
+        database=config.db,
+    )
 
 
 class LRUCache(Generic[EngineT, AgentT]):
