@@ -11,9 +11,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
-from src.auth.config import auth_settings
-from src.auth.dependencies import AUTH_ENGINE
-from src.auth.routers import router as auth_router
 from src.connection.database import DEMO_ENGINE
 from src.connection.routers import connection, query
 from src.connection.tasks import sweep_stale_connections
@@ -23,7 +20,6 @@ from src.core.health import check_health
 from src.core.log import setup_logging
 from src.core.redis_client import redis_client
 from src.core.responses import APIResponse
-from src.profile.routers import router as profile_router
 
 logger = logging.getLogger(__name__)
 is_prod: bool = os.getenv("ENVIRONMENT") == "production"
@@ -44,18 +40,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     else:
         logger.info("Debug mode enabled.")
 
-    if auth_settings.RATE_LIMIT_ENABLED:
-        logger.info("Rate limit enabled.")
-    else:
-        logger.info("Rate limit disabled.")
-
     sweep_task = asyncio.create_task(sweep_stale_connections())
     yield
     sweep_task.cancel()
     with contextlib.suppress(asyncio.CancelledError):
         await sweep_task
     redis_client.close()
-    AUTH_ENGINE.dispose()
     DEMO_ENGINE.dispose()
 
 
@@ -74,9 +64,9 @@ app = FastAPI(
 
 # CORS
 origins = [
-    "http://127.0.0.1:5173", # Local development
-    "http://127.0.0.1:8787", # Production testing
-    "https://persv.persv-dev.workers.dev" # Production URL
+    "http://localhost:5173",  # Local development
+    "http://localhost:8787",  # Production testing
+    "https://persv.persv-dev.workers.dev",  # Production URL
 ]
 
 app.add_middleware(
@@ -85,15 +75,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-New-Access-Token"],
 )
 
 # Routers
 app.add_api_route("/health", endpoint=check_health, tags=["health"])
-app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(connection.router, prefix="/connection", tags=["connection"])
 app.include_router(query.router, prefix="/connection", tags=["connection"])
-app.include_router(profile_router, prefix="/users", tags=["profile"])
 
 # Global exception handlers
 register_exception_handlers(app=app)
