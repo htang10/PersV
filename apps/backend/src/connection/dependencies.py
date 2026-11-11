@@ -5,10 +5,10 @@ from typing import Annotated
 from fastapi import Cookie, Depends, Request, Response
 
 from src.connection.config import conn_settings
+from src.connection.utils import get_client_ip
 from src.core.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
-anon_id_rl = RateLimiter("anon", conn_settings.ANON_ID_LIMITS)
 
 
 def generate_anon_id() -> str:
@@ -57,7 +57,9 @@ def get_user_id(
     set_anon_id_cookie(response, anon_id=new_anon_id)
 
     # Rate limit on the number of anon ids generated per IP address
-    anon_id_rl.consume(ip=request.client.host)
+    if conn_settings.RATE_LIMIT_ENABLED:
+        anon_id_rl = RateLimiter("anon", conn_settings.ANON_ID_LIMITS)
+        anon_id_rl.consume(ip=get_client_ip(request))
     return new_anon_id
 
 
