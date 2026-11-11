@@ -10,7 +10,7 @@
     "typecheck": "react-router typegen && tsc",
     "migrate": "openapi-ts -i http://localhost:8000/openapi.json -o src/client",
     "deploy": "pnpm run build && wrangler deploy",
-    "preview": "pnpm run build && wrangler dev"
+    "preview": "pnpm run build && wrangler preview"
   },
   "dependencies": {
     "@react-router/fs-routes": "^8.5.1",
