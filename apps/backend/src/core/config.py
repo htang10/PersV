@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     SERVER_HOST: str
     SERVER_PORT: int
+    PROXY_SECRET: str
 
     PG_DEMO_SCHEMA: str = "demo"
     PG_DEMO_USER: str
