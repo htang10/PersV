@@ -18,6 +18,7 @@ from src.core.config import settings
 from src.core.handlers import register_exception_handlers
 from src.core.health import check_health
 from src.core.log import setup_logging
+from src.core.middleware import ProxySecretMiddleware
 from src.core.redis_client import redis_client
 from src.core.responses import APIResponse
 
@@ -39,6 +40,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
             logger.warning("Health check failed at startup. Skipping health check.")
     else:
         logger.info("Debug mode enabled.")
+
+    if settings.RATE_LIMIT_ENABLED:
+        logger.info("Rate limit enabled.")
+    else:
+        logger.info("Rate limit disabled.")
 
     sweep_task = asyncio.create_task(sweep_stale_connections())
     yield
@@ -69,6 +75,7 @@ origins = [
     "https://persv.persv-dev.workers.dev",  # Production URL
 ]
 
+# Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -76,6 +83,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(ProxySecretMiddleware)
 
 # Routers
 app.add_api_route("/health", endpoint=check_health, tags=["health"])
