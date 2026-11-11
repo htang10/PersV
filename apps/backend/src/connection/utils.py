@@ -2,9 +2,14 @@ from collections import OrderedDict
 from types import MappingProxyType
 from typing import Generic
 
+from fastapi import Request
 from sqlalchemy.engine import URL
 
 from src.connection.schemas import DBMS, AgentT, CacheEntry, ConnectionConfig, EngineT
+
+
+def get_client_ip(request: Request) -> str:
+    return request.headers.get("x-real-ip") or request.client.host or "unknown"
 
 
 def build_database_url(config: ConnectionConfig) -> URL | str:
