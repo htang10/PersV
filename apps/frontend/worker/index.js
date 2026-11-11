@@ -20,8 +20,8 @@ export default {
       // Return the backend's response as-is (status, headers, cookies, body)
       return new Response(upstream.body, upstream);
     } catch (err) {
-      console.error("Proxy error:", err);
-      return Response.json({ proxyError: String(err) }, { status: 502 });
+      console.error("Proxy error:", err?.name, err?.message, err?.stack);
+      return Response.json({ proxyError: `${err?.name}: ${err?.message}` }, { status: 502 });
     }
   },
 };
