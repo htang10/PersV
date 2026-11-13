@@ -1,5 +1,7 @@
 import os
+from typing import Self
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,7 +15,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     SERVER_HOST: str
     SERVER_PORT: int
-    PROXY_SECRET: str
+    PROXY_SECRET: str | None = None
 
     PG_DEMO_SCHEMA: str = "demo"
     PG_DEMO_USER: str
@@ -31,6 +33,13 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str
     REDIS_MAX_CONN: int
     REDIS_CONN_TIMEOUT: int
+
+    @model_validator(mode="after")
+    def validate_proxy_secret(self) -> Self:
+        if os.getenv("ENVIRONMENT") == "production" and not self.PROXY_SECRET:
+            raise ValueError("PROXY_SECRET is required in production")
+
+        return self
 
 
 settings = Settings()  # type: ignore
