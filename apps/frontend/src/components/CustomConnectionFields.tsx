@@ -1,5 +1,14 @@
 import { useState } from "react";
 import type { Dbms } from "@/client";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectTrigger,
+  SelectValue,
+  SelectItem,
+} from "@/components/ui/select";
 
 const DBMS_OPTIONS = [
   { value: "postgresql", label: "PostgreSQL" },
@@ -16,88 +25,125 @@ const DEFAULT_SCHEMAS: Partial<Record<Dbms, string>> = {
   oracle: "",
 };
 
+const DEFAULT_PORTS: Record<Dbms, string> = {
+  postgresql: "5432",
+  mysql: "3306",
+  mariadb: "3306",
+  sqlite: "",
+  oracle: "1521",
+  mssql: "1433",
+};
+
 export function CustomConnectionFields({ disabled }: { disabled: boolean }) {
   const [dbms, setDBMS] = useState<Dbms>("postgresql");
   const defaultSchema = DEFAULT_SCHEMAS[dbms];
 
   return (
-    <fieldset disabled={disabled}>
-      <div>
-        <label htmlFor="dbms">DBMS: </label>
-        <select
-          name="dbms"
-          id="dbms"
-          value={dbms}
-          onChange={(event) => setDBMS(event.target.value as Dbms)}
-          required
-        >
-          {DBMS_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
-      {dbms === "sqlite" ? (
-        <div>
-          <label htmlFor="sqliteFile">Database file</label>
-          <div>
-            <input
+    <fieldset disabled={disabled} className="min-w-0 disabled:opacity-60">
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="dbms">DBMS</FieldLabel>
+          <Select
+            name="dbms"
+            items={DBMS_OPTIONS}
+            value={dbms}
+            onValueChange={(value) => setDBMS(value as Dbms)}
+            required
+          >
+            <SelectTrigger id="dbms" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DBMS_OPTIONS.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
+        {dbms === "sqlite" ? (
+          <Field>
+            <FieldLabel htmlFor="sqliteFile">Database file</FieldLabel>
+            <Input
               type="file"
               name="sqliteFile"
               id="sqliteFile"
               accept=".sqlite, .sqlite3, .db, .db3"
               required
             />
-          </div>
-          <span>Allowed file extensions: .sqlite, .sqlite3, .db, .db3</span>
-        </div>
-      ) : (
-        <>
-          <div>
-            <label htmlFor="username">Username: </label>
-            <input type="text" name="username" id="username" autoComplete="off" required />
-          </div>
-          <div>
-            <label htmlFor="password">Password: </label>
-            <input type="password" name="password" id="password" autoComplete="off" required />
-          </div>
-          <div>
-            <label htmlFor="host">Host: </label>
-            <input type="text" name="host" id="host" required />
-          </div>
-          <div>
-            <label htmlFor="port">Port: </label>
-            <input
-              type="text"
-              name="port"
-              id="port"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              onChange={(e) => {
-                e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "");
-              }} // Only allow numeric input
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="database">Database: </label>
-            <input type="text" name="database" id="database" required />
-          </div>
-          {defaultSchema !== undefined && (
-            <div>
-              <label htmlFor="schema">Schema: </label>
-              <input
-                key={dbms}
-                type="text"
-                name="schema"
-                id="schema"
-                defaultValue={defaultSchema}
-              />
+            <FieldDescription>Allowed extensions: .sqlite, .sqlite3, .db, .db3</FieldDescription>
+          </Field>
+        ) : (
+          <>
+            <div className="grid grid-cols-[1fr_6rem] gap-3">
+              <Field>
+                <FieldLabel htmlFor="host">Host</FieldLabel>
+                <Input
+                  id="host"
+                  name="host"
+                  placeholder="localhost"
+                  className="font-mono"
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="port">Port</FieldLabel>
+                <Input
+                  name="port"
+                  id="port"
+                  key={dbms}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder={DEFAULT_PORTS[dbms]}
+                  className="font-mono"
+                  onChange={(e) => {
+                    e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "");
+                  }}
+                  required
+                />
+              </Field>
             </div>
-          )}
-        </>
-      )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field>
+                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <Input
+                  name="username"
+                  id="username"
+                  autoComplete="off"
+                  className="font-mono"
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <Input type="password" name="password" id="password" autoComplete="off" required />
+              </Field>
+            </div>
+
+            <div className={defaultSchema !== undefined ? "grid grid-cols-2 gap-3" : "grid gap-3"}>
+              <Field>
+                <FieldLabel htmlFor="database">Database</FieldLabel>
+                <Input name="database" id="database" className="font-mono" required />
+              </Field>
+              {defaultSchema !== undefined && (
+                <Field>
+                  <FieldLabel htmlFor="schema">Schema</FieldLabel>
+                  <Input
+                    key={dbms}
+                    name="schema"
+                    id="schema"
+                    placeholder={DEFAULT_SCHEMAS[dbms]}
+                    className="font-mono"
+                  />
+                </Field>
+              )}
+            </div>
+          </>
+        )}
+      </FieldGroup>
     </fieldset>
   );
 }

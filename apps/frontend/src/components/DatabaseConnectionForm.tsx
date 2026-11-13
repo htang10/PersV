@@ -4,6 +4,19 @@ import { useMutation } from "@tanstack/react-query";
 import { errorMessage } from "@/errors/error-message";
 import { connectCustom, connectDemo } from "@/services/connection";
 import { CustomConnectionFields } from "@/components";
+import { AlertCircle, Database, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 
 type ConnectionType = "demo" | "custom";
 
@@ -61,36 +74,49 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
   };
 
   return (
-    <div>
-      {connError && <p role="alert">{connError}</p>}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="radio"
-          name="connection"
-          id="demo"
-          value="demo"
-          checked={connectionType === "demo"}
-          onChange={(e) => setConnectionType(e.target.value as ConnectionType)}
-        />
-        <label htmlFor="demo">Demo</label>
-        <br />
-        <input
-          type="radio"
-          name="connection"
-          id="custom"
-          value="custom"
-          checked={connectionType === "custom"}
-          onChange={(e) => setConnectionType(e.target.value as ConnectionType)}
-        />
-        <label htmlFor="custom">Custom</label>
-        <br />
-        <Activity mode={connectionType === "custom" ? "visible" : "hidden"}>
-          <CustomConnectionFields disabled={connectionType !== "custom"} />
-        </Activity>
-        <button type="submit" disabled={connection.isPending}>
-          {connection.isPending ? "Connecting..." : "Connect"}
-        </button>
+    <Card className="w-full">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="size-4" />
+            Connect to a database
+          </CardTitle>
+          <CardDescription>Try the demo database or connect your own.</CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col gap-4">
+          <Tabs
+            value={connectionType}
+            onValueChange={(value) => setConnectionType(value as ConnectionType)}
+          >
+            <TabsList className="relative w-full">
+              <TabsPrimitive.Indicator className="absolute left-0 top-(--active-tab-top) h-(--active-tab-height) w-(--active-tab-width) translate-x-(--active-tab-left) rounded-md bg-background shadow-sm transition-all duration-300 ease-out motion-reduce:transition-none" />
+              <TabsTrigger value="demo">Demo</TabsTrigger>
+              <TabsTrigger value="custom">Custom</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <Activity mode={connectionType === "custom" ? "visible" : "hidden"}>
+            <div className="animate-in fade-in-0 slide-in-from-top-1 duration-300 motion-reduce:animate-none">
+              <CustomConnectionFields disabled={connectionType !== "custom"} />
+            </div>
+          </Activity>
+
+          {connError && (
+            <Alert variant="destructive" role="alert">
+              <AlertCircle className="size-4" />
+              <AlertDescription>{connError}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+
+        <CardFooter>
+          <Button type="submit" className="w-full" disabled={connection.isPending}>
+            {connection.isPending && <Loader2 className="size-4 animate-spin" />}
+            {connection.isPending ? "Connecting..." : "Connect"}
+          </Button>
+        </CardFooter>
       </form>
-    </div>
+    </Card>
   );
 }
