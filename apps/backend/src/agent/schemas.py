@@ -2,14 +2,20 @@ from pydantic import BaseModel, Field
 
 
 class QueryResponse(BaseModel):
-    """Response containing the query result and the generated SQL statement.
+    """Response to a natural-language question about the database.
 
     Attributes:
-        result (str): The result of the query.
-        sql (str): The SQL query executed to obtain the result.
+        result: The answer, in plain language.
+        sql: The SQL query that was executed. None if the question could not be answered.
+        suggestions: Alternative questions to try. None if the question was answered.
     """
 
-    result: str = Field(description="The result of the query.")
-    sql: str = Field(
-        description="The SQL query that was generated and executed to get the result."
+    result: str = Field(description="The answer to the question, in plain language.")
+    sql: str | None = Field(
+        default=None,
+        description="The SQL query that was executed. None if the question could not be answered.",
+    )
+    suggestions: list[str] | None = Field(
+        default=None,
+        description="Alternative questions to try. Only present if no data could be retrieved.",
     )
