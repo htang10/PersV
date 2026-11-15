@@ -116,25 +116,32 @@ export type QueryRequest = {
 /**
  * QueryResponse
  *
- * Response containing the query result and the generated SQL statement.
+ * Response to a natural-language question about the database.
  *
  * Attributes:
- * result (str): The result of the query.
- * sql (str): The SQL query executed to obtain the result.
+ * result: The answer, in plain language.
+ * sql: The SQL query that was executed. None if the question could not be answered.
+ * suggestions: Alternative questions to try. None if the question was answered.
  */
 export type QueryResponse = {
     /**
      * Result
      *
-     * The result of the query.
+     * The answer to the question, in plain language.
      */
     result: string;
     /**
      * Sql
      *
-     * The SQL query that was generated and executed to get the result.
+     * The SQL query that was executed. None if the question could not be answered.
      */
-    sql: string;
+    sql?: string | null;
+    /**
+     * Suggestions
+     *
+     * Alternative questions to try. Only present if no data could be retrieved.
+     */
+    suggestions?: Array<string> | null;
 };
 
 /**
