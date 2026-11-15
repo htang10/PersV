@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import type { NoticeData } from "@/types/notice";
+import { useLocationNotice } from "@/hooks";
 import { AlertCircle, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useLocationNotice } from "@/hooks/useLocationNotice";
-import type { NoticeData } from "@/types/notice";
 
 const NOTICE_STYLES = {
   info: { icon: Info, className: "" },

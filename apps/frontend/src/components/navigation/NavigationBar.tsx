@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { ModeToggle } from "@/components/";
+import { ModeToggle } from "./ModeToggle";
 
 export function NavigationBar() {
   return (

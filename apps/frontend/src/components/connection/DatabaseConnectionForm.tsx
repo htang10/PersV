@@ -3,7 +3,7 @@ import type { ConnectionConfig, Dbms } from "@/client";
 import { useMutation } from "@tanstack/react-query";
 import { errorMessage } from "@/errors/error-message";
 import { connectCustom, connectDemo } from "@/services/connection";
-import { CustomConnectionFields } from "@/components";
+import { CustomConnectionFields } from "./CustomConnectionFields";
 import { AlertCircle, Database, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";

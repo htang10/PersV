@@ -1,0 +1,1 @@
+export { QueryInterface } from "./QueryInterface";
