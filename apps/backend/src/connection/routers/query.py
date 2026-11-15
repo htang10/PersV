@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, status
 from src.agent.executor import generate_response
 from src.agent.schemas import QueryResponse
 from src.connection.database import custom_conn_manager
+from src.connection.demo_samples import pick_demo_samples
 from src.connection.dependencies import UserId
 from src.connection.exceptions import AgentError
 from src.connection.schemas import QueryRequest
@@ -25,7 +26,11 @@ async def query(user_id: UserId, request: QueryRequest):
         )
 
     try:
-        return await generate_response(prompt=request.prompt, user_id=user_id)
+        response = await generate_response(prompt=request.prompt, user_id=user_id)
+        if not response.sql:
+            # Suggests users what they can ask if their current question couldn't be answered
+            response.suggestions = pick_demo_samples()
+        return response
     except AgentError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
