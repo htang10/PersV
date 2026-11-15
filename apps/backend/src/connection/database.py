@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import ValidationError
 from sqlalchemy import Engine, create_engine, make_url, text
+from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.agent.builder import create_sql_agent
@@ -65,7 +66,7 @@ class CustomDBConnectionManager:
         self,
         user_id: str,
         schema: str,
-        url: str | None = None,
+        url: URL | str | None = None,
     ) -> None:
         with self.__get_user_lock(user_id=user_id):
             if url:  # CUSTOM
@@ -229,7 +230,7 @@ class CustomDBConnectionManager:
             # (socket, file handle, thread) that needs manual teardown
 
     @staticmethod
-    def __build_engine(url: str) -> Engine:
+    def __build_engine(url: URL | str) -> Engine:
         return create_engine(
             url,
             pool_size=1,
@@ -259,7 +260,7 @@ class CustomDBConnectionManager:
             self.__locks.pop(user_id, None)
 
     @staticmethod
-    def __encrypt_connection(url: str) -> str:
+    def __encrypt_connection(url: URL | str) -> str:
         """Encrypt a connection string using AES-256-GCM.
 
         Args:
@@ -271,7 +272,14 @@ class CustomDBConnectionManager:
         key = base64.b64decode(conn_settings.ENCRYPTION_KEY)
         aesgcm = AESGCM(key)
         nonce = os.urandom(12)  # 96-bit nonce, required for GCM
-        ciphertext = aesgcm.encrypt(nonce, url.encode(), None)
+
+        plain_url = (
+            url.render_as_string(hide_password=False)
+            if isinstance(url, URL)
+            else url
+        )
+
+        ciphertext = aesgcm.encrypt(nonce, plain_url.encode(), None)
         # prepend nonce to ciphertext so we can recover it during decryption
         return base64.b64encode(nonce + ciphertext).decode()
 
