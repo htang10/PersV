@@ -1,149 +1,150 @@
 import { useState } from "react";
 import type { Dbms } from "@/client";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { parseConnectionString } from "@/lib/connectionString";
+import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
+  SelectItem,
   SelectTrigger,
   SelectValue,
-  SelectItem,
 } from "@/components/ui/select";
-
-const DBMS_OPTIONS = [
-  { value: "postgresql", label: "PostgreSQL" },
-  { value: "mysql", label: "MySQL" },
-  { value: "mariadb", label: "MariaDB" },
-  { value: "sqlite", label: "SQLite" },
-  { value: "oracle", label: "Oracle" },
-  { value: "mssql", label: "Microsoft SQL Server" },
-] as const;
-
-const DEFAULT_SCHEMAS: Partial<Record<Dbms, string>> = {
-  postgresql: "public",
-  mssql: "dbo",
-  oracle: "",
-};
-
-const DEFAULT_PORTS: Record<Dbms, string> = {
-  postgresql: "5432",
-  mysql: "3306",
-  mariadb: "3306",
-  sqlite: "",
-  oracle: "1521",
-  mssql: "1433",
-};
+import { ConnectionStringInput } from "./ConnectionStringInput";
+import { CredentialFields } from "./CredentialFields";
+import { SqliteFileField } from "./SqliteFileField";
+import {
+  DBMS_OPTIONS,
+  DEFAULT_PORTS,
+  DEFAULT_SCHEMAS,
+  INITIAL_FORM,
+  type ConnectionFormState,
+} from "@/types/connectionOptions";
 
 export function CustomConnectionFields({ disabled }: { disabled: boolean }) {
-  const [dbms, setDBMS] = useState<Dbms>("postgresql");
-  const defaultSchema = DEFAULT_SCHEMAS[dbms];
+  const [form, setForm] = useState<ConnectionFormState>(INITIAL_FORM);
+  const [connectionString, setConnectionString] = useState("");
+  const [connectionStringError, setConnectionStringError] = useState("");
+  // Bumping this remounts ConnectionStringInput, which resets its "hide secrets" state
+  const [connectionStringKey, setConnectionStringKey] = useState(0);
+
+  const isSqlite = form.dbms === "sqlite";
+
+  function handleConnectionStringChange(value: string) {
+    setConnectionString(value);
+    setConnectionStringError("");
+
+    if (!value.trim()) return;
+
+    try {
+      const parsed = parseConnectionString(value);
+      if (!parsed) return;
+
+      setForm({
+        dbms: parsed.dbms,
+        host: parsed.host ?? "",
+        port: parsed.port ?? DEFAULT_PORTS[parsed.dbms],
+        username: parsed.username ?? "",
+        password: parsed.password ?? "",
+        database: parsed.database ?? "",
+        schema: parsed.schema ?? DEFAULT_SCHEMAS[parsed.dbms] ?? "",
+      });
+    } catch {
+      // Allow users to finish typing before showing an error.
+    }
+  }
+
+  function validateConnectionString() {
+    if (!connectionString.trim()) {
+      setConnectionStringError("");
+      return;
+    }
+
+    try {
+      if (!parseConnectionString(connectionString)) {
+        throw new Error("Invalid connection string.");
+      }
+      setConnectionStringError("");
+    } catch (error) {
+      setConnectionStringError(
+        error instanceof Error ? error.message : "Invalid connection string.",
+      );
+    }
+  }
+
+  function updateField<K extends keyof ConnectionFormState>(
+    field: K,
+    value: ConnectionFormState[K],
+  ) {
+    setForm((previous) => ({ ...previous, [field]: value }));
+    // Manual edits invalidate the original connection string.
+    setConnectionStringError("");
+  }
+
+  function handleDBMSChange(dbms: Dbms) {
+    setForm((previous) => ({
+      ...previous,
+      dbms,
+      port: DEFAULT_PORTS[dbms],
+      schema: DEFAULT_SCHEMAS[dbms] ?? "",
+    }));
+    setConnectionString("");
+    setConnectionStringError("");
+    setConnectionStringKey((key) => key + 1);
+  }
 
   return (
-    <fieldset disabled={disabled} className="min-w-0 disabled:opacity-60">
-      <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="dbms">DBMS</FieldLabel>
-          <Select
-            name="dbms"
-            items={DBMS_OPTIONS}
-            value={dbms}
-            onValueChange={(value) => setDBMS(value as Dbms)}
-            required
-          >
-            <SelectTrigger id="dbms" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DBMS_OPTIONS.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+    <fieldset disabled={disabled} className="min-w-0 space-y-5 disabled:opacity-60">
+      {!isSqlite && (
+        <>
+          <ConnectionStringInput
+            key={connectionStringKey}
+            value={connectionString}
+            error={connectionStringError}
+            onChange={handleConnectionStringChange}
+            onBlur={validateConnectionString}
+          />
 
-        {dbms === "sqlite" ? (
+          {/* OR separator */}
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium text-muted-foreground">OR</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      )}
+
+      <FieldSet>
+        {!isSqlite && <FieldLegend variant="label">Configure manually</FieldLegend>}
+        <FieldGroup id="connectionForm">
           <Field>
-            <FieldLabel htmlFor="sqliteFile">Database file</FieldLabel>
-            <Input
-              type="file"
-              name="sqliteFile"
-              id="sqliteFile"
-              accept=".sqlite, .sqlite3, .db, .db3"
+            <FieldLabel htmlFor="dbms">DBMS</FieldLabel>
+            <Select
+              name="dbms"
+              items={DBMS_OPTIONS}
+              value={form.dbms}
+              onValueChange={(value) => handleDBMSChange(value as Dbms)}
               required
-            />
-            <FieldDescription>Allowed extensions: .sqlite, .sqlite3, .db, .db3</FieldDescription>
+            >
+              <SelectTrigger id="dbms" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DBMS_OPTIONS.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
-        ) : (
-          <>
-            <div className="grid grid-cols-[1fr_6rem] gap-3">
-              <Field>
-                <FieldLabel htmlFor="host">Host</FieldLabel>
-                <Input
-                  id="host"
-                  name="host"
-                  placeholder="localhost"
-                  className="font-mono"
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="port">Port</FieldLabel>
-                <Input
-                  name="port"
-                  id="port"
-                  key={dbms}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder={DEFAULT_PORTS[dbms]}
-                  className="font-mono"
-                  onChange={(e) => {
-                    e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "");
-                  }}
-                  required
-                />
-              </Field>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel htmlFor="username">Username</FieldLabel>
-                <Input
-                  name="username"
-                  id="username"
-                  autoComplete="off"
-                  className="font-mono"
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <Input type="password" name="password" id="password" autoComplete="off" required />
-              </Field>
-            </div>
-
-            <div className={defaultSchema !== undefined ? "grid grid-cols-2 gap-3" : "grid gap-3"}>
-              <Field>
-                <FieldLabel htmlFor="database">Database</FieldLabel>
-                <Input name="database" id="database" className="font-mono" required />
-              </Field>
-              {defaultSchema !== undefined && (
-                <Field>
-                  <FieldLabel htmlFor="schema">Schema</FieldLabel>
-                  <Input
-                    key={dbms}
-                    name="schema"
-                    id="schema"
-                    placeholder={DEFAULT_SCHEMAS[dbms]}
-                    className="font-mono"
-                  />
-                </Field>
-              )}
-            </div>
-          </>
-        )}
-      </FieldGroup>
+          {isSqlite ? (
+            <SqliteFileField showPathNote={!!connectionString} />
+          ) : (
+            <CredentialFields form={form} onFieldChange={updateField} />
+          )}
+        </FieldGroup>
+      </FieldSet>
     </fieldset>
   );
 }
