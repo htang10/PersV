@@ -13,7 +13,7 @@ export default function ConnectPage() {
   return (
     <>
       <NavigationBar />
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 pt-[12vh]">
+      <main className="flex flex-col gap-4 mx-auto w-full max-w-3xl px-6 py-[12vh]">
         <Notice />
         <DatabaseConnectionForm onConnected={() => navigate("/query")} />
       </main>
