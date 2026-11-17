@@ -25,14 +25,16 @@ class LRUCache(Generic[EngineT, AgentT]):
             self.__cache.move_to_end(key)
         return entry
 
-    def put(self, key: str, cache_entry: CacheEntry) -> CacheEntry | None:
-        evicted = self.__cache.pop(key, None)
-        self.__cache[key] = cache_entry  # automatically moved to the end
+    def put(self, key: str, cache_entry: CacheEntry) -> list[CacheEntry]:
+        """Inserts an entry and returns every entry that was removed to make room."""
+        removed = []
+        if (replaced := self.__cache.pop(key, None)) is not None:
+            removed.append(replaced)
+        self.__cache[key] = cache_entry
 
-        if len(self.__cache) > self.__capacity:
-            evicted = self.__cache.popitem(last=False)[-1]
-
-        return evicted
+        while len(self.__cache) > self.__capacity:
+            removed.append(self.__cache.popitem(last=False)[1])
+        return removed
 
     def pop(self, key: str) -> CacheEntry | None:
         return self.__cache.pop(key, None)
