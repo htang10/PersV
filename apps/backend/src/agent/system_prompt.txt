@@ -2,8 +2,7 @@ You are an agent that answers questions about a SQL database using natural langu
 
 ## Schema
 
-The active schema is `{schema_name}`. Always qualify table references with it
-(e.g. `{schema_name}.table_name`).
+{schema_instruction}
 
 Available tables and columns:
 {schema_summary}

@@ -26,7 +26,7 @@ _DISALLOWED_NODES = (
 
 
 def create_tools(
-    engine: Engine, schema: str, schema_summary: dict[str, object]
+    engine: Engine, schema_summary: dict[str, object], schema: str | None = None
 ) -> tuple[list, str]:
     """Builds the LangChain tools the SQL agent uses to explore data and run queries.
 
@@ -56,58 +56,59 @@ def create_tools(
         since those don't require verifying stored representations.
         If an error is returned, do not try to rerun this tool, instead move on.
         """
-        # Model may pass a schema-qualified name (e.g. "app.table_name") since
-        # it's instructed to qualify tables in SQL — normalize before validating.
-        unqualified_table = table.split(".")[-1]
-        if (
-            unqualified_table not in schema_summary
-            or column not in schema_summary[unqualified_table]
-        ):
-            return (
-                f"Error: '{table}.{column}' is not a valid table/column in this schema."
+        if schema_summary:
+            # Model may pass a schema-qualified name (e.g. "app.table_name") since
+            # it's instructed to qualify tables in SQL — normalize before validating.
+            unqualified_table = table.split(".")[-1]
+            if (
+                unqualified_table not in schema_summary
+                or column not in schema_summary[unqualified_table]
+            ):
+                return f"Error: '{table}.{column}' is not a valid table/column in this schema."
+
+            # Quote schema and table names to ensure naming correctness and consistency
+            preparer = engine.dialect.identifier_preparer
+            qualified_table = (
+                f"{preparer.quote(schema)}.{preparer.quote(unqualified_table)}"
+                if schema
+                else preparer.quote(unqualified_table)
             )
+            quoted_column = preparer.quote(column)
 
-        # Quote schema and table names to ensure naming correctness and consistency
-        preparer = engine.dialect.identifier_preparer
-        qualified_table = (
-            f"{preparer.quote(schema)}.{preparer.quote(unqualified_table)}"
-            if schema
-            else preparer.quote(unqualified_table)
-        )
-        quoted_column = preparer.quote(column)
-
-        try:
-            with Session(engine) as session:
-                result = session.execute(
-                    text(
-                        f"SELECT DISTINCT {quoted_column} "
-                        f"FROM {qualified_table} "
-                        f"ORDER BY {quoted_column} "
-                        f"LIMIT 101"
+            try:
+                with Session(engine) as session:
+                    result = session.execute(
+                        text(
+                            f"SELECT DISTINCT {quoted_column} "
+                            f"FROM {qualified_table} "
+                            f"ORDER BY {quoted_column} "
+                            f"LIMIT 101"
+                        )
                     )
-                )
-                values = [row[0] for row in result]
+                    values = [row[0] for row in result]
 
-                if not values:
-                    return "No values found."
+                    if not values:
+                        return "No values found."
 
-                if len(values) > 100:
-                    return (
-                        f"'{column}' has more than 100 distinct values."
-                        f"Treat it as free text: use a pattern match (LIKE) instead "
-                        f"of an exact-value filter."
-                    )
+                    if len(values) > 100:
+                        return (
+                            f"'{column}' has more than 100 distinct values."
+                            f"Treat it as free text: use a pattern match (LIKE) instead "
+                            f"of an exact-value filter."
+                        )
 
-                cap = 50
-                if len(values) > cap:
-                    return (
-                        f"'{column}' has {len(values)} distinct values."
-                        f"Here are {cap} examples: {values[:cap]}"
-                    )
+                    cap = 50
+                    if len(values) > cap:
+                        return (
+                            f"'{column}' has {len(values)} distinct values."
+                            f"Here are {cap} examples: {values[:cap]}"
+                        )
 
-            return f"All {len(values)} distinct values: {values}"
-        except SQLAlchemyError as e:
-            return f"Error retrieving distinct values: {e}"
+                return f"All {len(values)} distinct values: {values}"
+            except SQLAlchemyError as e:
+                return f"Error retrieving distinct values: {e}"
+
+        return "Table or column not found."
 
     @tool
     def sql_execute(query: str) -> str:

@@ -26,7 +26,7 @@ model = ChatOpenAI(
 )
 
 
-def create_sql_agent(engine: Engine, schema: str) -> CompiledStateGraph:
+def create_sql_agent(engine: Engine, schema: str | None = None) -> CompiledStateGraph:
     """Initializes a SQL agent tailored to the provided database connection.
 
     The agent is configured to generate and execute read-only queries, returning structured responses in natural language.
@@ -39,10 +39,21 @@ def create_sql_agent(engine: Engine, schema: str) -> CompiledStateGraph:
     tools, dialect = create_tools(
         engine=engine, schema=schema, schema_summary=schema_summary
     )
+
+    if schema:
+        schema_instruction = (
+            f"The active schema is `{schema}`. Always qualify table references with it"
+            f"(e.g. `{schema}.table_name`)."
+        )
+    else:
+        schema_instruction = (
+            "This database has no schemas. Reference tables by name only, "
+            "with no prefix."
+        )
     system_prompt = SYSTEM_PROMPT.format(
         dialect=dialect,
         top_k=5,
-        schema_name=schema or "default",
+        schema_instruction=schema_instruction,
         schema_summary=json.dumps(schema_summary),
     )
     return create_agent(
@@ -53,12 +64,14 @@ def create_sql_agent(engine: Engine, schema: str) -> CompiledStateGraph:
     )
 
 
-def _build_schema_summary(engine: Engine, schema: str) -> dict[str, object]:
+def _build_schema_summary(
+    engine: Engine, schema: str | None = None
+) -> dict[str, object]:
     """Inspects the database schema and build a mapping of tables to their columns and types.
 
     Args:
         engine: SQLAlchemy engine connected to the target database.
-        schema: Name of the database schema to inspect.
+        schema: Name of the database schema to inspect. If None, the default schema is used.
 
     Returns:
         A dict mapping each table name to a dict of its column names and
