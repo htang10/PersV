@@ -5,13 +5,17 @@ from fastapi.routing import APIRouter
 
 from src.connection.config import conn_settings
 from src.connection.database import custom_conn_manager
-from src.connection.dependencies import UserId
+from src.connection.dependencies.anon_id import UserId
+from src.connection.dependencies.sqlite import SQLiteDBFile
 from src.connection.exceptions import (
     ConnectionNotFoundError,
     DBConfigError,
 )
-from src.connection.schemas import ConnectionConfig, ConnectionStatus
-from src.connection.utils import build_database_url
+from src.connection.schemas import (
+    ClientServerConnectionConfig,
+    ConnectionStatus,
+    EmbeddedConnectionConfig,
+)
 from src.core.responses import APIResponse
 
 logger = logging.getLogger(__name__)
@@ -43,18 +47,38 @@ def connect_demo(user_id: UserId):
     description="Establish a database connection using the provided credentials.",
     response_model=ConnectionStatus,
 )
-def connect(config: ConnectionConfig, user_id: UserId):
-    url = build_database_url(config=config)
+def connect(config: ClientServerConnectionConfig, user_id: UserId):
     try:
         custom_conn_manager.connect(
             user_id=user_id,
             schema=config.db_schema,
-            url=url,
+            url=config.to_url(),
         )
-        return ConnectionStatus(connected=True, database=config.db or config.db_path)
+        return ConnectionStatus(connected=True, database=config.db)
     except DBConfigError:
         raise HTTPException(
             detail="Could not connect to database. Check your credentials and try again.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@router.post(
+    "/custom/sqlite",
+    summary="Connect to a SQLite database",
+    description="Establish a SQLite database connection.",
+    response_model=ConnectionStatus,
+)
+def connect_sqlite(db_file: SQLiteDBFile, user_id: UserId):
+    config = EmbeddedConnectionConfig(db_path=db_file.file_path)
+    try:
+        custom_conn_manager.connect(
+            user_id=user_id,
+            url=config.to_url(),
+        )
+        return ConnectionStatus(connected=True, database=db_file.file_name)
+    except DBConfigError:
+        raise HTTPException(
+            detail="Unable to connect to the SQLite database. Ensure the uploaded file is valid and accessible.",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
