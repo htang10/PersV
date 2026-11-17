@@ -99,7 +99,15 @@ class EmbeddedConnectionConfig(CustomBaseModel):
     )
 
     def to_url(self) -> URL:
-        return URL.create(drivername=self.dbms.scheme, database=self.db_path)
+        query = {"mode": "ro", "uri": "true"}
+        return URL.create(
+            drivername=self.dbms.scheme, database=self.db_path, query=query
+        )
+
+
+class SQLiteUpload(CustomBaseModel):
+    file_path: str
+    file_name: str
 
 
 class ConnectionStatus(CustomBaseModel):
@@ -128,6 +136,7 @@ class ConnectionDetails(CustomBaseModel):
     dbms: str
     encrypted_url: str
     db: str | None
+    db_file_path: str | None = None  # set only for uploaded SQLite files
 
 
 ConnectionRecord = Annotated[
@@ -163,3 +172,4 @@ class CustomCacheEntry(CacheEntry, Generic[EngineT, AgentT]):
     target: Literal["custom"] = "custom"
     engine: EngineT
     agent: AgentT
+    db_file_path: str | None = None  # set only for uploaded SQLite files
