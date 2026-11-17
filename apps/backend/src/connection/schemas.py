@@ -1,7 +1,10 @@
 from enum import StrEnum
-from typing import Annotated, Generic, Literal, TypeVar
+from typing import Annotated, ClassVar, Generic, Literal, Self, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
+from pydantic import ConfigDict, Field, TypeAdapter, model_validator
+from sqlalchemy import URL
+
+from src.core.schemas import CustomBaseModel
 
 
 class DBMS(StrEnum):
@@ -27,39 +30,35 @@ class DBMS(StrEnum):
         }[self]
 
 
-class ConnectionConfig(BaseModel):
+SCHEMA_DBMS = {DBMS.POSTGRESQL, DBMS.MSSQL, DBMS.ORACLE}
+ClientServerDBMS = Literal[
+    DBMS.POSTGRESQL, DBMS.MYSQL, DBMS.MARIADB, DBMS.ORACLE, DBMS.MSSQL
+]
+
+
+class ClientServerConnectionConfig(CustomBaseModel):
     """Database connection parameters provided by the user."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-
-    dbms: DBMS = Field(
+    dbms: ClientServerDBMS = Field(
         default=DBMS.POSTGRESQL,
         description="The database management system hosting the target database.",
     )
-
-    username: str | None = Field(
-        default=None,
+    username: str = Field(
         description="The username used to authenticate with the database server.",
     )
-    password: str | None = Field(
-        default=None,
+    password: str = Field(
         description="The password used to authenticate with the database server.",
     )
-    host: str | None = Field(
-        default=None,
+    host: str = Field(
         description="The hostname or IP address of the database server.",
     )
-    port: int | None = Field(
-        default=None,
+    port: int = Field(
+        ge=1,
+        le=65535,
         description="The port number the database server is listening on.",
     )
-    db: str | None = Field(
-        default=None,
+    db: str = Field(
         description="The name of the database to connect to.",
-    )
-    db_path: str | None = Field(
-        default=None,
-        description="The filesystem path to the SQLite database file.",
     )
     db_schema: str | None = Field(
         default=None,
@@ -68,33 +67,42 @@ class ConnectionConfig(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_connection_fields(self) -> ConnectionConfig:
-        if self.dbms == DBMS.SQLITE:
-            if not self.db_path:
-                raise ValueError("A database file path is required for SQLite.")
-        else:
-            required_fields = {
-                "username": self.username,
-                "host": self.host,
-                "port": self.port,
-                "db": self.db,
-            }
-
-            missing = [
-                field
-                for field, value in required_fields.items()
-                if value is None or value == ""
-            ]
-
-            if missing:
-                raise ValueError(
-                    f"The following fields are required: {', '.join(missing)}."
-                )
-
+    def validate_schema(self) -> Self:  # from typing import Self
+        if self.dbms in SCHEMA_DBMS and not self.db_schema:
+            raise ValueError("A schema is required for this database.")
+        if self.dbms not in SCHEMA_DBMS:
+            self.db_schema = None
         return self
 
+    def to_url(self) -> URL:
+        if self.dbms == DBMS.ORACLE:
+            database, query = None, {"service_name": self.db}
+        else:
+            database, query = self.db, {}
 
-class ConnectionStatus(BaseModel):
+        return URL.create(
+            drivername=self.dbms.scheme,
+            username=self.username,
+            password=self.password,
+            host=self.host,
+            port=self.port,
+            database=database,
+            query=query,
+        )
+
+
+class EmbeddedConnectionConfig(CustomBaseModel):
+    dbms: ClassVar[DBMS] = DBMS.SQLITE
+
+    db_path: str = Field(
+        description="The filesystem path to the SQLite database file.",
+    )
+
+    def to_url(self) -> URL:
+        return URL.create(drivername=self.dbms.scheme, database=self.db_path)
+
+
+class ConnectionStatus(CustomBaseModel):
     connected: bool
     database: str | None = Field(
         default=None,
@@ -102,8 +110,8 @@ class ConnectionStatus(BaseModel):
     )
 
 
-class ConnectionPayload(BaseModel):
-    db_schema: str
+class ConnectionPayload(CustomBaseModel):
+    db_schema: str | None = None
     connected_at: str
 
 
@@ -116,9 +124,9 @@ class CustomPayload(ConnectionPayload):
     connection_details: ConnectionDetails
 
 
-class ConnectionDetails(BaseModel):
+class ConnectionDetails(CustomBaseModel):
     dbms: str
-    url: str
+    encrypted_url: str
     db: str | None
 
 
@@ -129,15 +137,17 @@ ConnectionRecord = Annotated[
 connection_adapter = TypeAdapter(ConnectionRecord)
 
 
-class QueryRequest(BaseModel):
-    prompt: str
+class QueryRequest(CustomBaseModel):
+    prompt: str = Field(max_length=2000, description="The prompt user entered.")
 
 
 EngineT = TypeVar("EngineT")
 AgentT = TypeVar("AgentT")
 
 
-class CacheEntry(BaseModel, Generic[EngineT, AgentT]):
+class CacheEntry(CustomBaseModel, Generic[EngineT, AgentT]):
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
+
     target: str
     engine: EngineT | None
     agent: AgentT | None
