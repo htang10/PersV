@@ -5,51 +5,57 @@ export type ClientOptions = {
 };
 
 /**
- * ConnectionConfig
+ * Body_{'POST'} - /connection/custom/sqlite
+ */
+export type BodyPostConnectionCustomSqlite = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
+ * ClientServerConnectionConfig
  *
  * Database connection parameters provided by the user.
  */
-export type ConnectionConfig = {
+export type ClientServerConnectionConfig = {
     /**
+     * Dbms
+     *
      * The database management system hosting the target database.
      */
-    dbms?: Dbms;
+    dbms?: 'postgresql' | 'mysql' | 'mariadb' | 'oracle' | 'mssql';
     /**
      * Username
      *
      * The username used to authenticate with the database server.
      */
-    username?: string | null;
+    username: string;
     /**
      * Password
      *
      * The password used to authenticate with the database server.
      */
-    password?: string | null;
+    password: string;
     /**
      * Host
      *
      * The hostname or IP address of the database server.
      */
-    host?: string | null;
+    host: string;
     /**
      * Port
      *
      * The port number the database server is listening on.
      */
-    port?: number | null;
+    port: number;
     /**
      * Db
      *
      * The name of the database to connect to.
      */
-    db?: string | null;
-    /**
-     * Db Path
-     *
-     * The filesystem path to the SQLite database file.
-     */
-    db_path?: string | null;
+    db: string;
     /**
      * Schema
      *
@@ -73,13 +79,6 @@ export type ConnectionStatus = {
      */
     database?: string | null;
 };
-
-/**
- * DBMS
- *
- * Supported database management systems and their SQLAlchemy URL schemes.
- */
-export type Dbms = 'postgresql' | 'mysql' | 'mariadb' | 'sqlite' | 'oracle' | 'mssql';
 
 /**
  * HTTPValidationError
@@ -109,6 +108,8 @@ export type HealthStatus = {
 export type QueryRequest = {
     /**
      * Prompt
+     *
+     * The prompt user entered.
      */
     prompt: string;
 };
@@ -214,7 +215,7 @@ export type PostConnectionDemoResponses = {
 export type PostConnectionDemoResponse = PostConnectionDemoResponses[keyof PostConnectionDemoResponses];
 
 export type PostConnectionCustomData = {
-    body: ConnectionConfig;
+    body: ClientServerConnectionConfig;
     path?: never;
     query?: never;
     url: '/connection/custom';
@@ -237,6 +238,31 @@ export type PostConnectionCustomResponses = {
 };
 
 export type PostConnectionCustomResponse = PostConnectionCustomResponses[keyof PostConnectionCustomResponses];
+
+export type PostConnectionCustomSqliteData = {
+    body: BodyPostConnectionCustomSqlite;
+    path?: never;
+    query?: never;
+    url: '/connection/custom/sqlite';
+};
+
+export type PostConnectionCustomSqliteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PostConnectionCustomSqliteError = PostConnectionCustomSqliteErrors[keyof PostConnectionCustomSqliteErrors];
+
+export type PostConnectionCustomSqliteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ConnectionStatus;
+};
+
+export type PostConnectionCustomSqliteResponse = PostConnectionCustomSqliteResponses[keyof PostConnectionCustomSqliteResponses];
 
 export type GetConnectionStatusData = {
     body?: never;
