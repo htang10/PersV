@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from datetime import timedelta
+from pathlib import Path
 from threading import Lock, RLock
 from types import MappingProxyType
 
@@ -65,13 +66,14 @@ class CustomDBConnectionManager:
     def connect(
         self,
         user_id: str,
-        schema: str,
-        url: URL | str | None = None,
+        schema: str | None = None,
+        url: URL | None = None,
+        db_file_path: str | None = None,
     ) -> None:
         with self.__get_user_lock(user_id=user_id):
             if url:  # CUSTOM
                 engine = self.__build_engine(url=url)
-                self.__test_connection(engine=engine)
+                self.__test_connection(engine=engine, db_file_path=db_file_path)
 
                 agent = create_sql_agent(engine=engine, schema=schema)
 
@@ -83,8 +85,9 @@ class CustomDBConnectionManager:
                         connected_at=get_current_datetime().isoformat(),
                         connection_details=ConnectionDetails(
                             dbms=parsed.get_backend_name(),
-                            url=self.__encrypt_connection(url=url),
+                            encrypted_url=self.__encrypt_connection(url=url),
                             db=parsed.database,
+                            db_file_path=db_file_path,
                         ),
                     ),
                     engine=engine,
@@ -133,21 +136,25 @@ class CustomDBConnectionManager:
                 ):  # Another thread may have populated the cache while we waited.
                     agent = self.__get_cached_agent(user_id)
                     if not agent:
-                        encrypted_url = connection.connection_details.url
+                        encrypted_url = connection.connection_details.encrypted_url
                         conn_url = self.__decrypt_connection(encrypted=encrypted_url)
 
                         engine = self.__build_engine(url=conn_url)
                         schema = self.get_schema(user_id=user_id)
                         agent = create_sql_agent(engine=engine, schema=schema)
 
+                        db_file_path = connection.connection_details.db_file_path
+
                         self.__cache_connection(
                             user_id=user_id,
-                            cache_entry=CustomCacheEntry(engine=engine, agent=agent),
+                            cache_entry=CustomCacheEntry(
+                                engine=engine, agent=agent, db_file_path=db_file_path
+                            ),
                         )
 
         return agent
 
-    def get_schema(self, user_id: str | None) -> str:
+    def get_schema(self, user_id: str | None) -> str | None:
         if not user_id:
             return conn_settings.PG_DEMO_SCHEMA
 
@@ -163,7 +170,17 @@ class CustomDBConnectionManager:
             return None
 
         try:
-            return connection_adapter.validate_json(json.loads(raw))
+            payload = connection_adapter.validate_json(raw)
+            # Check if file still exists in the system when connecting to SQLite database
+            if isinstance(payload, CustomPayload):
+                file_path = payload.connection_details.db_file_path
+
+                if file_path:
+                    path = Path(file_path)
+                    if not path.is_file():
+                        return None
+
+            return payload
         except ValidationError:
             return None
 
@@ -183,12 +200,14 @@ class CustomDBConnectionManager:
         return ConnectionStatus(connected=True, database=db)
 
     @staticmethod
-    def __test_connection(engine: Engine) -> None:
+    def __test_connection(engine: Engine, db_file_path: str | None = None) -> None:
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
         except SQLAlchemyError as e:
             engine.dispose()
+            if db_file_path:
+                Path(db_file_path).unlink(missing_ok=True)
             logger.warning(e)
             raise DBConfigError
 
@@ -205,29 +224,35 @@ class CustomDBConnectionManager:
         serialized = json.dumps(payload.model_dump_json())
         redis_client.setex(ConnectionKey.for_user(user_id=user_id), ttl, serialized)
 
-        if engine and agent:  # CUSTOM
+        if isinstance(payload, CustomPayload) and engine and agent:  # CUSTOM
             self.__cache_connection(
                 user_id=user_id,
-                cache_entry=CustomCacheEntry(engine=engine, agent=agent),
+                cache_entry=CustomCacheEntry(
+                    engine=engine,
+                    agent=agent,
+                    db_file_path=payload.connection_details.db_file_path,
+                ),
             )
         else:  # DEMO
             self.__cache_connection(user_id=user_id, cache_entry=DemoCacheEntry())
 
+    @staticmethod
+    def __release(entry: CacheEntry | None) -> None:
+        if not isinstance(entry, CustomCacheEntry):
+            return
+        entry.engine.dispose()
+        if entry.db_file_path:
+            Path(entry.db_file_path).unlink(missing_ok=True)
+        # agent needs no explicit cleanup since it doesn't hold an OS-level resource
+        # (socket, file handle, thread) that needs manual teardown
+
     def __cache_connection(self, user_id: str, cache_entry: CacheEntry) -> None:
-        evicted = self.__connections.put(user_id, cache_entry)
-        if isinstance(evicted, CustomCacheEntry):
-            engine = evicted.engine
-            engine.dispose()
-            # agent needs no explicit cleanup since it doesn't hold an OS-level resource
-            # (socket, file handle, thread) that needs manual teardown
+        for evicted in self.__connections.put(user_id, cache_entry):
+            self.__release(evicted)
 
     def clear_cached_connection(self, user_id: str) -> None:
         hit = self.__connections.pop(user_id)
-        if isinstance(hit, CustomCacheEntry):
-            engine = hit.engine
-            engine.dispose()
-            # agent needs no explicit cleanup since it doesn't hold an OS-level resource
-            # (socket, file handle, thread) that needs manual teardown
+        self.__release(hit)
 
     @staticmethod
     def __build_engine(url: URL | str) -> Engine:
@@ -274,9 +299,7 @@ class CustomDBConnectionManager:
         nonce = os.urandom(12)  # 96-bit nonce, required for GCM
 
         plain_url = (
-            url.render_as_string(hide_password=False)
-            if isinstance(url, URL)
-            else url
+            url.render_as_string(hide_password=False) if isinstance(url, URL) else url
         )
 
         ciphertext = aesgcm.encrypt(nonce, plain_url.encode(), None)
