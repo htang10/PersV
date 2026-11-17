@@ -3,37 +3,12 @@ from types import MappingProxyType
 from typing import Generic
 
 from fastapi import Request
-from sqlalchemy.engine import URL
 
-from src.connection.schemas import DBMS, AgentT, CacheEntry, ConnectionConfig, EngineT
+from src.connection.schemas import AgentT, CacheEntry, EngineT
 
 
 def get_client_ip(request: Request) -> str:
     return request.headers.get("x-real-ip") or request.client.host or "unknown"
-
-
-def build_database_url(config: ConnectionConfig) -> URL | str:
-    if config.dbms == DBMS.SQLITE:
-        return f"sqlite:///{config.db_path}"
-
-    if config.dbms == DBMS.ORACLE and config.db:
-        return URL.create(
-            drivername=config.dbms.scheme,
-            username=config.username,
-            password=config.password,
-            host=config.host,
-            port=config.port,
-            query={"service_name": config.db},
-        )
-
-    return URL.create(
-        drivername=config.dbms.scheme,
-        username=config.username,
-        password=config.password,
-        host=config.host,
-        port=config.port,
-        database=config.db,
-    )
 
 
 class LRUCache(Generic[EngineT, AgentT]):
