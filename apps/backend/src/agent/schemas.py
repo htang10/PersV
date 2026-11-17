@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from src.core.schemas import CustomBaseModel
 
 
-class QueryResponse(BaseModel):
+class QueryResponse(CustomBaseModel):
     """Response to a natural-language question about the database.
 
     Attributes:
