@@ -4,7 +4,7 @@ from src.agent.executor import generate_response
 from src.agent.schemas import QueryResponse
 from src.connection.database import custom_conn_manager
 from src.connection.demo_samples import pick_demo_samples
-from src.connection.dependencies import UserId
+from src.connection.dependencies.anon_id import UserId
 from src.connection.exceptions import AgentError
 from src.connection.schemas import QueryRequest
 
