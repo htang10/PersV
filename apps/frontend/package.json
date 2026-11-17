@@ -8,7 +8,7 @@
     "staging": "react-router dev --mode staging",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
-    "migrate": "openapi-ts -i http://localhost:8000/openapi.json -o src/client",
+    "migrate": "pnpm dlx --package=@hey-api/openapi-ts@0.99.0 --package=typescript@5 openapi-ts -i http://localhost:8000/openapi.json -o src/client",
     "deploy": "pnpm run build && wrangler deploy",
     "preview": "pnpm run build && wrangler preview"
   },
