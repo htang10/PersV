@@ -1,4 +1,5 @@
 from enum import StrEnum
+from pathlib import Path
 from typing import Annotated, ClassVar, Generic, Literal, Self, TypeVar
 
 from pydantic import ConfigDict, Field, TypeAdapter, model_validator
@@ -40,7 +41,6 @@ class ClientServerConnectionConfig(CustomBaseModel):
     """Database connection parameters provided by the user."""
 
     dbms: ClientServerDBMS = Field(
-        default=DBMS.POSTGRESQL,
         description="The database management system hosting the target database.",
     )
     username: str = Field(
@@ -100,8 +100,9 @@ class EmbeddedConnectionConfig(CustomBaseModel):
 
     def to_url(self) -> URL:
         query = {"mode": "ro", "uri": "true"}
+        path = Path(self.db_path).resolve().as_posix()
         return URL.create(
-            drivername=self.dbms.scheme, database=self.db_path, query=query
+            drivername=self.dbms.scheme, database=f"file:{path}", query=query
         )
 
 
