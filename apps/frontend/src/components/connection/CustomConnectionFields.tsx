@@ -1,6 +1,10 @@
 import { useState } from "react";
-import type { Dbms } from "@/client";
 import { parseConnectionString } from "@/lib/connectionString";
+import { ConnectionStringInput } from "./ConnectionStringInput";
+import { CredentialFields } from "./CredentialFields";
+import { SqliteFileField } from "./SqliteFileField";
+import { DBMS_OPTIONS, DEFAULT_PORTS, DEFAULT_SCHEMAS, INITIAL_FORM } from "./connectionOptions";
+import type { ConnectionFormState, Dbms } from "@/types/connection";
 import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import {
   Select,
@@ -9,16 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ConnectionStringInput } from "./ConnectionStringInput";
-import { CredentialFields } from "./CredentialFields";
-import { SqliteFileField } from "./SqliteFileField";
-import {
-  DBMS_OPTIONS,
-  DEFAULT_PORTS,
-  DEFAULT_SCHEMAS,
-  INITIAL_FORM,
-  type ConnectionFormState,
-} from "@/types/connectionOptions";
 
 export function CustomConnectionFields({ disabled }: { disabled: boolean }) {
   const [form, setForm] = useState<ConnectionFormState>(INITIAL_FORM);

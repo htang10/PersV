@@ -1,14 +1,10 @@
 import { useState } from "react";
+import { DEFAULT_PORTS, DEFAULT_SCHEMAS } from "./connectionOptions";
+import type { ConnectionFormState, FieldChangeHandler } from "@/types/connection";
 import { RevealButton } from "@/components/shared/RevealButton";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import {
-  DEFAULT_PORTS,
-  DEFAULT_SCHEMAS,
-  type ConnectionFormState,
-  type FieldChangeHandler,
-} from "@/types/connectionOptions";
 
 type CredentialFieldsProps = {
   form: ConnectionFormState;
