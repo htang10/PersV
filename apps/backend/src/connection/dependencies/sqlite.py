@@ -39,7 +39,7 @@ async def process_sqlite_upload(file: UploadFile = File(...)) -> SQLiteUpload:
 
     return SQLiteUpload(
         file_path=str(temp_path),
-        file_name=file_name,
+        file_name=Path(file_name).stem,  # Remove file extension
     )
 
 
