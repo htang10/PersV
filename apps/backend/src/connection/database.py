@@ -69,6 +69,7 @@ class CustomDBConnectionManager:
         schema: str | None = None,
         url: URL | None = None,
         db_file_path: str | None = None,
+        db_file_name: str | None = None,
     ) -> None:
         with self.__get_user_lock(user_id=user_id):
             if url:  # CUSTOM
@@ -86,7 +87,7 @@ class CustomDBConnectionManager:
                         connection_details=ConnectionDetails(
                             dbms=parsed.get_backend_name(),
                             encrypted_url=self.__encrypt_connection(url=url),
-                            db=parsed.database,
+                            db=db_file_name or parsed.database,
                             db_file_path=db_file_path,
                         ),
                     ),
@@ -170,7 +171,7 @@ class CustomDBConnectionManager:
             return None
 
         try:
-            payload = connection_adapter.validate_json(raw)
+            payload = connection_adapter.validate_json(json.loads(raw))
             # Check if file still exists in the system when connecting to SQLite database
             if isinstance(payload, CustomPayload):
                 file_path = payload.connection_details.db_file_path

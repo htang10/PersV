@@ -74,6 +74,8 @@ def connect_sqlite(db_file: SQLiteDBFile, user_id: UserId):
         custom_conn_manager.connect(
             user_id=user_id,
             url=config.to_url(),
+            db_file_path=db_file.file_path,
+            db_file_name=db_file.file_name,
         )
         return ConnectionStatus(connected=True, database=db_file.file_name)
     except DBConfigError:
