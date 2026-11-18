@@ -1,14 +1,4 @@
-import type { Dbms } from "@/client";
-
-export type ParsedConnection = {
-  dbms: Dbms;
-  host?: string;
-  port?: string;
-  username?: string;
-  password?: string;
-  database?: string;
-  schema?: string;
-};
+import type { ParsedConnection, Dbms } from "@/types/connection";
 
 const SCHEME_TO_DBMS: Record<string, Dbms> = {
   postgresql: "postgresql",
