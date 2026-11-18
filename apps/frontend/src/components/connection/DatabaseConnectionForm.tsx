@@ -1,8 +1,9 @@
 import { useState, Activity } from "react";
-import type { ConnectionConfig, Dbms } from "@/client";
+import type { ClientServerConnectionConfig } from "@/client";
+import type { ConnectionType, Dbms } from "@/types/connection";
 import { useMutation } from "@tanstack/react-query";
 import { errorMessage } from "@/errors/error-message";
-import { connectCustom, connectDemo } from "@/services/connection";
+import { connectCustom, connectDemo, connectSQLite } from "@/services/connection";
 import { CustomConnectionFields } from "./CustomConnectionFields";
 import { AlertCircle, Database, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -18,15 +19,16 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 
-type ConnectionType = "demo" | "custom";
-
 export function DatabaseConnectionForm({ onConnected }: { onConnected: () => void }) {
   const [connectionType, setConnectionType] = useState<ConnectionType>("demo");
   const [connError, setConnError] = useState<string | null>(null);
 
   const connection = useMutation({
-    mutationFn: (config: ConnectionConfig | null) =>
-      config ? connectCustom(config) : connectDemo(),
+    mutationFn: (config?: ClientServerConnectionConfig | File) => {
+      if (!config) return connectDemo();
+      if (config instanceof File) return connectSQLite(config);
+      return connectCustom(config);
+    },
     onSuccess: () => {
       setConnError(null);
       onConnected();
@@ -39,7 +41,7 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
     setConnError(null); // Clear previous error message
 
     if (connectionType === "demo") {
-      connection.mutate(null);
+      connection.mutate();
       return;
     }
 
@@ -52,7 +54,13 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
     const dbms = field("dbms") as Dbms;
 
     if (dbms === "sqlite") {
-      setConnError("SQLite upload isn't supported yet.");
+      const file = formData.get("sqliteFile");
+      // An empty file input still yields a File object, with size 0
+      if (!(file instanceof File) || file.size === 0) {
+        setConnError("Please upload a database file.");
+        return;
+      }
+      connection.mutate(file);
       return;
     }
 
