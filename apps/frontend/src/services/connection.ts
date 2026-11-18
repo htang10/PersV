@@ -1,5 +1,7 @@
 import type {
-  ConnectionConfig,
+  ClientServerConnectionConfig,
+  PostConnectionCustomSqliteData,
+  PostConnectionCustomSqliteResponse,
   DeleteConnectionData,
   GetConnectionStatusData,
   GetConnectionStatusResponse,
@@ -20,13 +22,23 @@ export async function connectDemo(): Promise<PostConnectionDemoResponse> {
 }
 
 export async function connectCustom(
-  config: ConnectionConfig,
+  config: ClientServerConnectionConfig,
 ): Promise<PostConnectionCustomResponse> {
   return await fetchAPI<PostConnectionCustomData, PostConnectionCustomResponse>(
     "POST",
     "/connection/custom",
     {
       body: config,
+    },
+  );
+}
+
+export async function connectSQLite(file: File): Promise<PostConnectionCustomSqliteResponse> {
+  return await fetchAPI<PostConnectionCustomSqliteData, PostConnectionCustomSqliteResponse>(
+    "POST",
+    "/connection/custom/sqlite",
+    {
+      body: { file },
     },
   );
 }
