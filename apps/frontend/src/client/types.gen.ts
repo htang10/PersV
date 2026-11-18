@@ -25,7 +25,7 @@ export type ClientServerConnectionConfig = {
      *
      * The database management system hosting the target database.
      */
-    dbms?: 'postgresql' | 'mysql' | 'mariadb' | 'oracle' | 'mssql';
+    dbms: 'postgresql' | 'mysql' | 'mariadb' | 'oracle' | 'mssql';
     /**
      * Username
      *
