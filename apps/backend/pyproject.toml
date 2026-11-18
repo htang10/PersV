@@ -1,7 +1,7 @@
 [project]
 name = "backend"
 version = "0.1.0"
-requires-python = ">=3.14"
+requires-python = ">=3.15"
 dependencies = [
     "alembic>=1.18.4",
     "cryptography>=50.0.2",
