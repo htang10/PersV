@@ -33,7 +33,16 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
       setConnError(null);
       onConnected();
     },
-    onError: (error) => setConnError(errorMessage(error)),
+    onError: (error, config) => {
+      const message =
+        config instanceof File
+          ? "We couldn't open that file. Make sure it's a valid, unencrypted SQLite database."
+          : "We couldn't connect to your database. " +
+            "Check your host, port, database name, username, and password. " +
+            'The server must also be reachable from the internet, so "localhost" won\'t work.';
+
+      setConnError(errorMessage(error, { 400: message }));
+    },
   });
 
   const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
