@@ -257,6 +257,16 @@ class CustomDBConnectionManager:
 
     @staticmethod
     def __build_engine(url: URL | str) -> Engine:
+        sqlalchemy_url = make_url(url) if isinstance(url, str) else url
+        connect_args = {
+            "postgresql": {"connect_timeout": 10},
+            "mysql": {"connect_timeout": 10},
+            "mariadb": {"connect_timeout": 10},
+            "sqlite": {"timeout": 10},
+            "oracle": {"tcp_connect_timeout": 10},
+            "mssql": {"timeout": 10},
+        }.get(sqlalchemy_url.get_backend_name(), {})
+
         return create_engine(
             url,
             pool_size=1,
@@ -264,6 +274,7 @@ class CustomDBConnectionManager:
             pool_pre_ping=True,
             pool_timeout=30,
             pool_recycle=3600,
+            connect_args=connect_args,
         )
 
     def __get_cached_agent(self, user_id: str) -> CompiledStateGraph | None:
