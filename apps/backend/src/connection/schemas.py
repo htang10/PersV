@@ -23,11 +23,11 @@ class DBMS(StrEnum):
         """Returns the SQLAlchemy connection scheme for the database driver."""
         return {
             DBMS.POSTGRESQL: "postgresql+psycopg",
-            DBMS.MYSQL: "mysql+mysqldb",
-            DBMS.MARIADB: "mariadb+mariadbconnector",
+            DBMS.MYSQL: "mysql+pymysql",
+            DBMS.MARIADB: "mariadb+pymysql",
             DBMS.SQLITE: "sqlite+pysqlite",
             DBMS.ORACLE: "oracle+oracledb",
-            DBMS.MSSQL: "mssql+pyodbc",
+            DBMS.MSSQL: "mssql+mssqlpython",
         }[self]
 
 
