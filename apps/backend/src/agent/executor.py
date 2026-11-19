@@ -47,8 +47,7 @@ async def generate_response(prompt: str, user_id: str) -> QueryResponse:
         output = await stream.output()
         return output["structured_response"]
     except (BadRequestError, ConnectionNotFoundError) as e:
-        logger.error(f"Agent failed to generate response: {e}.")
-        raise AgentError
+        raise AgentError from e
     finally:
         elapsed = time.perf_counter() - start
         logger.info("Total execution time: %.3fs", elapsed)

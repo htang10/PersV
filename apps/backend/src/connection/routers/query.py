@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 
 from src.agent.executor import generate_response
@@ -9,6 +11,7 @@ from src.connection.exceptions import AgentError
 from src.connection.schemas import QueryRequest
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -20,6 +23,7 @@ router = APIRouter()
 async def query(user_id: UserId, request: QueryRequest):
     # If successful, reset the connection expiry for user every time they query
     if not user_id or not custom_conn_manager.reset_expiry(user_id=user_id):
+        logger.warning("User did not establish a database connection before querying.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No active database connection found.",
@@ -32,6 +36,7 @@ async def query(user_id: UserId, request: QueryRequest):
             response.suggestions = pick_demo_samples()
         return response
     except AgentError:
+        logger.exception("Agent failed to generate response.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Agent service is unavailable at the moment. Please try again later.",
