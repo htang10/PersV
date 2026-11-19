@@ -18,7 +18,7 @@ from src.core.config import settings
 from src.core.handlers import register_exception_handlers
 from src.core.health import check_health
 from src.core.log import setup_logging
-from src.core.middleware import ProxySecretMiddleware
+from src.core.middleware import register_middleware
 from src.core.redis_client import redis_client
 from src.core.responses import APIResponse
 
@@ -83,7 +83,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(ProxySecretMiddleware)
+register_middleware(app=app)
 
 # Routers
 app.add_api_route("/health", endpoint=check_health, tags=["health"])
