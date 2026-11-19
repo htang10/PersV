@@ -25,7 +25,6 @@ export function CredentialFields({ form, onFieldChange }: CredentialFieldsProps)
             name="host"
             value={form.host}
             onChange={(e) => onFieldChange("host", e.target.value)}
-            placeholder="localhost"
             className="font-mono"
             required
           />
