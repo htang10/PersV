@@ -104,6 +104,24 @@ export function DatabaseConnectionForm({ onConnected }: { onConnected: () => voi
             </TabsList>
           </Tabs>
 
+          <Activity mode={connectionType === "demo" ? "visible" : "hidden"}>
+            <p className="text-sm text-muted-foreground">
+              The demo uses{" "}
+              <a
+                href="https://github.com/lerocha/chinook-database"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                Chinook
+              </a>
+              , a sample database for a digital music store. It holds the catalog (artists, albums,
+              tracks, genres), customers with their invoices, employees, and playlists. It's
+              relatively small, widely used, and has enough relationships between tables to make it
+              a good fit for demonstration purposes.
+            </p>
+          </Activity>
+
           <Activity mode={connectionType === "custom" ? "visible" : "hidden"}>
             <div className="animate-in fade-in-0 slide-in-from-top-1 duration-300 motion-reduce:animate-none">
               <CustomConnectionFields disabled={connectionType !== "custom"} />
