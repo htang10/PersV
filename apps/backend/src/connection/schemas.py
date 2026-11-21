@@ -38,7 +38,7 @@ ClientServerDBMS = Literal[
 
 
 class ClientServerConnectionConfig(CustomBaseModel):
-    """Database connection parameters provided by the user."""
+    """Connection settings for a client-server database."""
 
     dbms: ClientServerDBMS = Field(
         description="The database management system hosting the target database.",
@@ -68,6 +68,7 @@ class ClientServerConnectionConfig(CustomBaseModel):
 
     @model_validator(mode="after")
     def validate_schema(self) -> Self:  # from typing import Self
+        """Require a schema for DBMSs that use schemas and discard it otherwise."""
         if self.dbms in SCHEMA_DBMS and not self.db_schema:
             raise ValueError("A schema is required for this database.")
         if self.dbms not in SCHEMA_DBMS:
@@ -75,6 +76,7 @@ class ClientServerConnectionConfig(CustomBaseModel):
         return self
 
     def to_url(self) -> URL:
+        """Build a SQLAlchemy URL from the connection settings."""
         if self.dbms == DBMS.ORACLE:
             database, query = None, {"service_name": self.db}
         else:
@@ -92,6 +94,8 @@ class ClientServerConnectionConfig(CustomBaseModel):
 
 
 class EmbeddedConnectionConfig(CustomBaseModel):
+    """Connection settings for an embedded SQLite database file."""
+
     dbms: ClassVar[DBMS] = DBMS.SQLITE
 
     db_path: str = Field(
@@ -99,6 +103,7 @@ class EmbeddedConnectionConfig(CustomBaseModel):
     )
 
     def to_url(self) -> URL:
+        """Build a read-only SQLAlchemy URL for the SQLite database file."""
         query = {"mode": "ro", "uri": "true"}
         path = Path(self.db_path).resolve().as_posix()
         return URL.create(
@@ -107,11 +112,15 @@ class EmbeddedConnectionConfig(CustomBaseModel):
 
 
 class SQLiteUpload(CustomBaseModel):
+    """Metadata for an uploaded SQLite database file."""
+
     file_path: str
     file_name: str
 
 
 class ConnectionStatus(CustomBaseModel):
+    """Report whether a database connection is established and its database name."""
+
     connected: bool
     database: str | None = Field(
         default=None,
@@ -120,20 +129,28 @@ class ConnectionStatus(CustomBaseModel):
 
 
 class ConnectionPayload(CustomBaseModel):
+    """Shared connection metadata returned by the connection endpoints."""
+
     db_schema: str | None = None
     connected_at: str
 
 
 class DemoPayload(ConnectionPayload):
+    """Identify an active connection to the built-in demo database."""
+
     target: Literal["demo"] = "demo"
 
 
 class CustomPayload(ConnectionPayload):
+    """Identify an active custom connection and its connection details."""
+
     target: Literal["custom"] = "custom"
     connection_details: ConnectionDetails
 
 
 class ConnectionDetails(CustomBaseModel):
+    """Store the metadata needed to identify and restore a custom connection."""
+
     dbms: str
     encrypted_url: str
     db: str | None
@@ -148,6 +165,8 @@ connection_adapter = TypeAdapter(ConnectionRecord)
 
 
 class QueryRequest(CustomBaseModel):
+    """Represent a user's natural-language database query request."""
+
     prompt: str = Field(max_length=2000, description="The prompt user entered.")
 
 
@@ -156,6 +175,8 @@ AgentT = TypeVar("AgentT")
 
 
 class CacheEntry(CustomBaseModel, Generic[EngineT, AgentT]):
+    """Hold the database engine and agent associated with a connection."""
+
     model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     target: str
@@ -164,12 +185,16 @@ class CacheEntry(CustomBaseModel, Generic[EngineT, AgentT]):
 
 
 class DemoCacheEntry(CacheEntry):
+    """Represent a demo connection without a dedicated engine or agent."""
+
     target: Literal["demo"] = "demo"
     engine: Literal[None] = None
     agent: Literal[None] = None
 
 
 class CustomCacheEntry(CacheEntry, Generic[EngineT, AgentT]):
+    """Cache the engine, agent, and optional SQLite file path for a custom connection."""
+
     target: Literal["custom"] = "custom"
     engine: EngineT
     agent: AgentT
