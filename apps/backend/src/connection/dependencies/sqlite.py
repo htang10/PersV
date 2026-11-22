@@ -12,6 +12,22 @@ MAX_SQLITE_BYTES = 50 * 1024 * 1024  # ~52 MB
 
 
 async def process_sqlite_upload(file: UploadFile = File(...)) -> SQLiteUpload:
+    """Validates an uploaded SQLite file and saves it to a temporary file.
+
+    The file is checked by extension, header and size. The caller owns the
+    temporary file and must delete it when finished.
+
+    Args:
+        file: The uploaded file.
+
+    Returns:
+        The temporary file's path and the original file name without its extension.
+
+    Raises:
+        400: If the extension is unsupported or the content is
+            not a SQLite database
+        413: If the file exceeds `MAX_SQLITE_BYTES`.
+    """
     file_name = file.filename or "database.sqlite"
     suffix = Path(file_name).suffix.lower()
     if suffix not in SQLITE_EXTENSIONS:
