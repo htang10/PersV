@@ -99,7 +99,12 @@ export function parseConnectionString(input: string): ParsedConnection | null {
     return { dbms };
   }
 
-  const pathname = decode(url.pathname).replace(/^\/+/, "");
+  let database;
+  if (dbms === "oracle") {
+    database = url.searchParams.get("service_name") ?? url.searchParams.get("sid") ?? undefined;
+  } else {
+    database = decode(url.pathname).replace(/^\/+/, "");
+  }
 
   const parsed: ParsedConnection = {
     dbms,
@@ -107,7 +112,7 @@ export function parseConnectionString(input: string): ParsedConnection | null {
     port: url.port || undefined,
     username: url.username ? decode(url.username) : undefined,
     password: url.password ? decode(url.password) : undefined,
-    database: pathname || undefined,
+    database: database || undefined,
   };
 
   // Allow an optional schema query parameter.
