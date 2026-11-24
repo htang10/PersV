@@ -1,4 +1,4 @@
-FROM python:3.15
+FROM python:3.15-trixie
 
 WORKDIR /backend
 
@@ -11,5 +11,7 @@ RUN uv sync --locked --no-dev --no-cache
 COPY . .
 
 ENV PATH="/backend/.venv/bin:$PATH"
+
+EXPOSE 8000
 
 CMD ["python3", "-m", "src.main"]
