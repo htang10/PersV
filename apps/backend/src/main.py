@@ -71,7 +71,6 @@ app = FastAPI(
 # CORS
 origins = [
     "http://localhost:5173",  # Local development
-    "http://localhost:8787",  # Production testing
     "https://persv.persv-dev.workers.dev",  # Production URL
 ]
 
@@ -108,6 +107,7 @@ if __name__ == "__main__":
         ),  # Disable multiprocessing during development
         reload=(not is_prod),  # Disable server reload on changes when deployed
         http="httptools",
+        loop="uvloop",
         access_log=False,
         # Uvicorn reads the `X-Forwarded-For` header, setting
         # `request.client.host` to the client IP instead of the proxy's
