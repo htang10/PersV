@@ -77,7 +77,7 @@ services:
     command: alembic upgrade head
     depends_on:
       postgres: { condition: service_healthy }
-    restart: "no"
+    restart: no
 
   # Set up specific roles
   postgres-setup:
@@ -92,7 +92,7 @@ services:
       -v demo_password="$$PG_DEMO_PASSWORD" -f /scripts/02_roles.sql'
     depends_on:
       migrate: { condition: service_completed_successfully }
-    restart: "no"
+    restart: no
 
   redis:
     image: redis:8.10-trixie
