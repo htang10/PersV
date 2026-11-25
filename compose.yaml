@@ -1,6 +1,7 @@
 name: persv
 
 x-dev-hosts: &dev-hosts
+  ENVIRONMENT: "development"
   PG_HOST: "postgres"
   REDIS_HOST: "redis"
 
@@ -8,13 +9,10 @@ services:
   frontend:
     build: apps/frontend
     image: persv/frontend:dev
-    container_name: frontend
     ports:
       - "5173:5173"
     environment:
       VITE_API_URL: "http://localhost:8000"
-    volumes:
-      - ./apps/frontend/.env.development:/frontend/.env.development:ro
     depends_on:
       - backend
     develop:
@@ -29,18 +27,15 @@ services:
   backend:
     build: apps/backend
     image: persv/backend:dev
-    container_name: backend
+    env_file: [apps/backend/.env.development]
     ports:
       - "8000:8000"
-    env_file: [apps/backend/.env.development]
     environment: *dev-hosts
     depends_on:
       postgres-setup:
         condition: service_completed_successfully
-        required: false
       redis:
         condition: service_healthy
-        required: false
     develop:
       watch:
         - action: sync
@@ -52,8 +47,6 @@ services:
 
   postgres:
     image: postgres:18-trixie
-    profiles: ["local-db"]
-    container_name: postgres
     env_file: [apps/backend/.env.development]
     volumes:
       - postgres_data:/var/lib/postgresql
@@ -71,18 +64,17 @@ services:
   # Set up demo dataset's structures
   migrate:
     build: apps/backend
-    profiles: ["local-db"]
+    image: persv/migrate:dev
     env_file: [apps/backend/.env.development]
     environment: *dev-hosts
     command: alembic upgrade head
     depends_on:
       postgres: { condition: service_healthy }
-    restart: no
+    restart: "no"
 
   # Set up specific roles
   postgres-setup:
     image: postgres:18-trixie
-    profiles: ["local-db"]
     env_file: [apps/backend/.env.development]
     volumes:
       - ./apps/backend/scripts:/scripts:ro
@@ -92,12 +84,10 @@ services:
       -v demo_password="$$PG_DEMO_PASSWORD" -f /scripts/02_roles.sql'
     depends_on:
       migrate: { condition: service_completed_successfully }
-    restart: no
+    restart: "no"
 
   redis:
     image: redis:8.10-trixie
-    profiles: ["local-db"]
-    container_name: redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
