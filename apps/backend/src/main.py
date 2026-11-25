@@ -23,7 +23,7 @@ from src.core.redis_client import redis_client
 from src.core.responses import APIResponse
 
 logger = logging.getLogger(__name__)
-is_prod: bool = os.getenv("ENVIRONMENT") == "production"
+DEV_MODE: bool = os.getenv("ENVIRONMENT") == "development"
 
 
 @asynccontextmanager
@@ -60,9 +60,9 @@ def generate_unique_op_id(route: APIRoute) -> str:
 
 
 app = FastAPI(
-    docs_url=None if is_prod else "/docs",
-    redoc_url=None if is_prod else "/redoc",
-    openapi_url=None if is_prod else "/openapi.json",
+    docs_url="/docs" if DEV_MODE else None,
+    redoc_url="/redoc" if DEV_MODE else None,
+    openapi_url="/openapi.json" if DEV_MODE else None,
     lifespan=lifespan,
     default_response_class=APIResponse,
     generate_unique_id_function=generate_unique_op_id,
@@ -71,6 +71,7 @@ app = FastAPI(
 # CORS
 origins = [
     "http://localhost:5173",  # Local development
+    "http://localhost:8787"  # Staging / Production testing
     "https://persv.persv-dev.workers.dev",  # Production URL
 ]
 
@@ -82,7 +83,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-register_middleware(app=app)
+register_middleware(app=app, dev_mode=DEV_MODE)
 
 # Routers
 app.add_api_route("/health", endpoint=check_health, tags=["health"])
@@ -103,9 +104,9 @@ if __name__ == "__main__":
         host=settings.SERVER_HOST,
         port=settings.SERVER_PORT,
         workers=(
-            workers_count if is_prod else 1
+            1 if DEV_MODE else workers_count
         ),  # Disable multiprocessing during development
-        reload=(not is_prod),  # Disable server reload on changes when deployed
+        reload=DEV_MODE,  # Disable server reload on changes when deployed
         http="httptools",
         loop="uvloop",
         access_log=False,

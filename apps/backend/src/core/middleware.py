@@ -14,7 +14,7 @@ from src.core.log import request_id_var
 logger = logging.getLogger(__name__)
 
 
-def register_middleware(app: FastAPI) -> None:
+def register_middleware(app: FastAPI, dev_mode: bool) -> None:
     @app.middleware("http")
     async def request_context(
         request: Request, call_next: RequestResponseEndpoint
@@ -59,7 +59,7 @@ def register_middleware(app: FastAPI) -> None:
         request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         if (
-            os.getenv("ENVIRONMENT") == "production"
+            not dev_mode
             and request.url.path != "/health"  # startup probe has no secret
             and request.method != "OPTIONS"
         ):

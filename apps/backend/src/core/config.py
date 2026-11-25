@@ -36,8 +36,11 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_proxy_secret(self) -> Self:
-        if os.getenv("ENVIRONMENT") == "production" and not self.PROXY_SECRET:
-            raise ValueError("PROXY_SECRET is required in production")
+        if (
+            not os.getenv("ENVIRONMENT", "development") == "development"
+            and not self.PROXY_SECRET
+        ):
+            raise ValueError("PROXY_SECRET is required.")
 
         return self
 
