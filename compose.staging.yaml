@@ -1,0 +1,90 @@
+name: persv-staging
+
+x-staging-hosts: &staging-hosts
+  ENVIRONMENT: "staging"
+  BACKEND_URL: http://backend:8000
+
+services:
+  frontend:
+    build:
+      context: apps/frontend
+      args:
+        VITE_API_URL: /api
+    image: persv/frontend:staging
+    ports:
+      - "8787:8787"
+    environment: *staging-hosts
+    volumes:
+      - ./apps/frontend/.dev.vars:/frontend/.dev.vars:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build: apps/backend
+    image: persv/backend:staging
+    env_file: [apps/backend/.env.staging]
+    ports:
+      - "8000:8000"
+    environment: *staging-hosts
+    depends_on:
+      postgres-setup:
+        condition: service_completed_successfully
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18-trixie
+    env_file: [apps/backend/.env.staging]
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - type: bind
+        source: ./apps/backend/scripts/01_schemas.sql # Run schema setup
+        target: /docker-entrypoint-initdb.d/01_schemas.sql
+        read_only: true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d persv"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Set up demo dataset's structures
+  migrate:
+    build: apps/backend
+    image: persv/migrate:staging
+    env_file: [apps/backend/.env.staging]
+    environment: *staging-hosts
+    command: alembic upgrade head
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  # Set up specific roles
+  postgres-setup:
+    image: postgres:18-trixie
+    env_file: [apps/backend/.env.staging]
+    volumes:
+      - ./apps/backend/scripts:/scripts:ro
+    command: >
+      sh -c 'PGPASSWORD="$$PG_MIGRATION_PASSWORD" psql -h postgres
+      -U "$$PG_MIGRATION_USER" -d "$$PG_DATABASE" -v ON_ERROR_STOP=1
+      -v demo_password="$$PG_DEMO_PASSWORD" -f /scripts/02_roles.sql'
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: "no"
+
+  redis:
+    image: redis:8.10-trixie
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
